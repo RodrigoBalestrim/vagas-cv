@@ -39,6 +39,16 @@ const KEYWORDS_GERAIS = [
 
 const normKey = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+// Remove prefixos de localização do título da vaga, ex.: "[SÃO PAULO] Front-end" -> "Front-end"
+const cleanJobTitle = (titulo?: string): string => {
+  if (!titulo) return '';
+  return titulo
+    .trim()
+    .replace(/^\s*\[[^\]]*\]\s*/i, '')
+    .replace(/^\s*\([^)]*\)\s*/i, '')
+    .trim();
+};
+
 function extractJobKeywords(desc: string): string[] {
   if (!desc) return [];
   const d = normKey(desc);
@@ -62,7 +72,7 @@ function extractJobKeywords(desc: string): string[] {
 function fallbackTemplate(jobMatch?: Job): string {
   const h = profile.nome;
   const role = jobMatch?.titulo
-    ? jobMatch.titulo.toUpperCase()
+    ? cleanJobTitle(jobMatch.titulo).toUpperCase()
     : 'DESENVOLVEDOR FRONT-END JÚNIOR';
   const keywords = extractJobKeywords(jobMatch?.descricao || '');
   const resumoExtra = keywords.length
@@ -114,7 +124,7 @@ function fallbackTemplate(jobMatch?: Job): string {
     <section class="sec">
       <h2>Skills</h2>
       <div class="items">
-        ${habilidadeFoco}<div class="skills-grid"><p>React</p><p>TypeScript</p><p>Next.js</p><p>JavaScript (ES6+)</p><p>React Native, Expo</p><p>HTML5, CSS3</p><p>Tailwind CSS, Bootstrap</p><p>Three.js, React Three Fiber, Framer Motion</p><p>APIs REST</p><p>REST API</p><p>Supabase (PostgreSQL, Auth)</p><p>Git, GitHub, Vercel</p><p>Figma</p><p>Testes</p><p>Responsive Design</p><p>Web Development</p><p>Front-end</p><p>Engenharia de prompts (Gemini/OpenAI)</p></div>
+        ${habilidadeFoco}<div class="skills-grid"><p>React</p><p>TypeScript</p><p>Next.js</p><p>JavaScript (ES6+)</p><p>React Native, Expo</p><p>HTML5, CSS3</p><p>Tailwind CSS, Bootstrap</p><p>Three.js, React Three Fiber, Framer Motion</p><p>APIs REST</p><p>Supabase (PostgreSQL, Auth)</p><p>Git, GitHub, Vercel</p><p>Figma</p><p>Testes</p><p>Responsive Design</p><p>Web Development</p><p>Front-end</p><p>Engenharia de prompts (Gemini/OpenAI)</p></div>
       </div>
     </section>
     <section class="sec">
@@ -462,7 +472,7 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
 
       const h = profile.nome;
       const role = jobMatch?.titulo
-        ? jobMatch.titulo.toUpperCase()
+        ? cleanJobTitle(jobMatch.titulo).toUpperCase()
         : 'DESENVOLVEDOR FRONT-END JÚNIOR';
       const keywords = extractJobKeywords(jobMatch?.descricao || '');
 
@@ -506,7 +516,7 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       const skillsList = [
         'React', 'TypeScript', 'Next.js', 'JavaScript (ES6+)', 'React Native, Expo',
         'HTML5, CSS3', 'Tailwind CSS, Bootstrap', 'Three.js, React Three Fiber, Framer Motion',
-        'APIs REST', 'REST API', 'Supabase (PostgreSQL, Auth)', 'Git, GitHub, Vercel', 'Figma',
+        'APIs REST', 'Supabase (PostgreSQL, Auth)', 'Git, GitHub, Vercel', 'Figma',
         'Testes', 'Responsive Design', 'Web Development', 'Front-end',
         'Engenharia de prompts (Gemini/OpenAI)',
       ];
