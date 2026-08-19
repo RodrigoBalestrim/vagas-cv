@@ -52,6 +52,17 @@ const KEYWORDS_VAGA = [
   'scrum', 'ágil', 'ingles', 'comunicacao',
 ];
 
+// Termos de requisitos que o perfil de fato cobre (skills exibidas no currículo + keywords)
+const COBERTURA_PERFIL = [
+  'React', 'React Native', 'Next.js', 'TypeScript', 'JavaScript', 'Expo', 'Expo Router',
+  'HTML5', 'CSS3', 'Tailwind CSS', 'Bootstrap', 'Framer Motion', 'Three.js', 'React Three Fiber',
+  'Swiper', 'Supabase', 'PostgreSQL', 'APIs REST', 'REST API', 'Git', 'GitHub', 'Vercel', 'VS Code',
+  'Figma', 'Node.js', 'GitHub Actions', 'CI/CD', 'Edge Functions', 'AsyncStorage',
+  'Engenharia de Prompts', 'Gemini', 'OpenAI', 'Auth', 'Design Responsivo', 'Responsive Design',
+  'Testes', 'Jest', 'componentes reutilizáveis', 'code review', 'estado', 'props',
+  'consumo de APIs', 'Web Development', 'Front-end', 'Frontend',
+];
+
 // Calcula o % de compatibilidade entre a vaga e o perfil do candidato.
 // Retorna score (0-100) e as skills exigidas cobertas / não cobertas pelo perfil.
 export function calcularCompatibilidade(desc?: string): {
@@ -60,17 +71,17 @@ export function calcularCompatibilidade(desc?: string): {
   missing: string[];
 } {
   if (!desc) return { score: 0, matched: [], missing: [] };
-  const d = normKey(desc);
+  const normalizeToken = (s: string) => normKey(s).replace(/[^a-z0-9]/g, '');
+  const d = normalizeToken(desc);
   const matched: string[] = [];
   const missing: string[] = [];
   for (const term of KEYWORDS_VAGA) {
-    if (!d.includes(normKey(term))) continue;
-    const coberto =
-      SKILLS_PERFIL.some(s => d.includes(normKey(s)) && normKey(s).includes(normKey(term))) ||
-      KEYWORDS_GERAIS.some(g => normKey(g) === normKey(term) || d.includes(normKey(g))) ||
-      (term === 'REST API' && d.includes('api rest')) ||
-      (term === 'responsivo' && d.includes('responsiv')) ||
-      (term === 'front-end' || term === 'frontend' ? true : false);
+    const nt = normalizeToken(term);
+    if (!d.includes(nt)) continue;
+    const coberto = COBERTURA_PERFIL.some(s => {
+      const ns = normalizeToken(s);
+      return ns === nt || ns.includes(nt) || nt.includes(ns);
+    });
     if (coberto) matched.push(term);
     else missing.push(term);
   }
