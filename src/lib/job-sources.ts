@@ -416,7 +416,7 @@ async function fonteNovoTrampo(limiteData: number, keywords: string[]): Promise<
   const jobs: Job[] = [];
   for (let page = 1; page <= 5; page++) {
     try {
-      const url = page === 1 ? 'https://www.novotrampo.com.br/vagas' : `https://www.novotrampo.com.br/vagas/${page}`;
+      const url = page === 1 ? 'https://www.novotrampo.com.br/' : `https://www.novotrampo.com.br/vagas/${page}`;
       const html = await pegarTexto(url);
       const blocos = html.split(/class="po-sm-12 po-lg-4 po-p-1"/).slice(1);
 
