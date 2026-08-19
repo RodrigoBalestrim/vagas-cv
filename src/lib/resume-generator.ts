@@ -85,7 +85,7 @@ function fallbackTemplate(jobMatch?: Job): string {
     .contact .sep { margin: 0 6px; color: #999; }
     h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 2px; margin: 18px 0 8px; letter-spacing: .3px; }
     .items p { margin: 0 0 5px; }
-    .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+    .skills-grid { display: block; }
     .skills-grid p { margin: 0 0 5px; }
     .skills-grid .skills-full { grid-column: 1 / -1; }
     .xp-row { display: flex; justify-content: space-between; font-weight: 600; font-size: 12.5px; margin-bottom: 3px; }
@@ -516,17 +516,12 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
         'Testes', 'Responsive Design', 'Web Development', 'Front-end',
         'Engenharia de prompts (Gemini/OpenAI)',
       ];
-      // duas colunas: skills distribuídas à esquerda e à direita na mesma linha
-      for (let i = 0; i < skillsList.length; i += 2) {
-        const left = skillsList[i];
-        const right = skillsList[i + 1];
-        const y = doc.y;
-        doc.text('•  ' + left, 36, y);
-        if (right) doc.text('•  ' + right, 300, y);
-        doc.y = y + 9;
+      // coluna única: até 4 skills por linha, ordem de leitura linear (ATS-safe)
+      for (let i = 0; i < skillsList.length; i += 4) {
+        const linha = skillsList.slice(i, i + 4).join('  •  ');
+        doc.text('•  ' + linha, { lineGap: 1 });
+        doc.moveDown(0.05);
       }
-      doc.x = 36;
-      doc.moveDown(0.05);
 
       section('Projetos');
       doc.text('Prazo Certo', { continued: true });

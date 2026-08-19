@@ -223,17 +223,12 @@ function gerarCurriculoPDF(vaga) {
         'Testes', 'Responsive Design', 'Web Development', 'Front-end',
         'Engenharia de prompts (Gemini/OpenAI)',
       ];
-      // duas colunas: skills distribuídas à esquerda e à direita na mesma linha
-      for (let i = 0; i < skillsList.length; i += 2) {
-        const left = skillsList[i];
-        const right = skillsList[i + 1];
-        const y = doc.y;
-        doc.text('•  ' + left, 36, y);
-        if (right) doc.text('•  ' + right, 300, y);
-        doc.y = y + 9;
+      // coluna única: até 4 skills por linha, ordem de leitura linear (ATS-safe)
+      for (let i = 0; i < skillsList.length; i += 4) {
+        const linha = skillsList.slice(i, i + 4).join('  •  ');
+        doc.text('•  ' + linha, { lineGap: 1 });
+        doc.moveDown(0.05);
       }
-      doc.x = 36;
-      doc.moveDown(0.05);
 
       section('Projetos');
       doc.text('Prazo Certo', { continued: true });
