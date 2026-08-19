@@ -80,12 +80,48 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     generateResume({ ...formData, format: 'html' } as any);
   };
 
-  const handlePrint = () => {
-    if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.focus();
-      iframeRef.current.contentWindow.print();
-    } else {
-      window.print();
+  const nomeArquivo = (ext: string) => {
+    const tituloVaga = (mode === 'manual' ? formData.jobTitle : vaga?.titulo) || 'curriculo';
+    const base = tituloVaga
+      .replace(/[\[\]()]/g, '')
+      .replace(/[^a-zA-Z0-9áéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+    return `${base}.${ext}`;
+  };
+
+  const baixarPDF = async () => {
+    setLoading(true);
+    try {
+      const payload =
+        mode === 'manual'
+          ? { ...formData, format: 'pdf' }
+          : {
+              jobTitle: vaga?.titulo,
+              companyName: vaga?.empresa,
+              location: vaga?.local,
+              jobDescription: vaga?.descricao || vaga?.titulo,
+              format: 'pdf',
+            };
+      const res = await fetch('/api/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nomeArquivo('pdf');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -228,7 +264,7 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
       {/* Footer actions */}
       <div style={{ padding: '16px', borderTop: '1px solid #e5e7eb', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
         <button onClick={onClose} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer' }}>Fechar</button>
-        <button onClick={handlePrint} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Salvar PDF</button>
+        <button onClick={baixarPDF} style={{ padding: '8px 16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Salvar PDF</button>
       </div>
     </div>
   );
