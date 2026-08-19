@@ -129,7 +129,7 @@ function fallbackTemplate(jobMatch?: Job): string {
     <section class="sec">
       <h2>Experiência</h2>
       <div class="items">
-        <div class="xp-row"><span class="xp-title">- Técnico de Informática</span><span class="xp-date">Autônomo (Jan/2014 – Dez/2024)</span></div><p>Mais de 10 anos de experiência em atendimento ao cliente, diagnóstico e resolução de problemas técnicos, gestão do próprio negócio, suporte e organização.</p>
+        <div class="xp-row"><span class="xp-title">- Desenvolvedor Full Stack</span><span class="xp-date">Autônomo (Jan/2025 – Atual)</span></div><p>Desenvolvimento autônomo de sites e aplicativos de ponta a ponta (front-end e back-end). Autor do Prazo Certo (React Native, TypeScript, Expo, Supabase/PostgreSQL, IA generativa, CI/CD), além de portfólio 3D, landing pages e currículo HTML bilíngue com deploy na Vercel.</p><div class="xp-row"><span class="xp-title">- Técnico de Informática</span><span class="xp-date">Autônomo (Jan/2014 – Dez/2024)</span></div><p>Mais de 10 anos de experiência em atendimento ao cliente, diagnóstico e resolução de problemas técnicos, gestão do próprio negócio, suporte e organização.</p>
       </div>
     </section>
     <section class="sec">
@@ -473,38 +473,38 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       const keywords = extractJobKeywords(jobMatch?.descricao || '');
 
       // Cabeçalho
-      doc.font('Helvetica-Bold').fontSize(18).fillColor('#111111').text(h);
-      doc.moveDown(0.2);
-      doc.font('Helvetica-Bold').fontSize(10.5).fillColor('#111111').text(role);
-      doc.moveDown(0.2);
-      doc.font('Helvetica').fontSize(8).fillColor('#333333').text(
+      doc.font('Helvetica-Bold').fontSize(17).fillColor('#111111').text(h);
+      doc.moveDown(0.1);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor('#111111').text(role);
+      doc.moveDown(0.1);
+      doc.font('Helvetica').fontSize(7.5).fillColor('#333333').text(
         '<CIDADE, UF> · <EMAIL> · <TELEFONE> · GitHub: https://github.com/<usuario> · LinkedIn: https://www.linkedin.com/in/<usuario> · Portfólio: https://<portfolio>.vercel.app'
       );
 
       const section = (titulo: string) => {
-        doc.moveDown(0.4);
+        doc.moveDown(0.3);
         doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#111111').text(titulo);
-        doc.moveDown(0.05);
+        doc.moveDown(0.03);
         doc.moveTo(36, doc.y).lineTo(559, doc.y).lineWidth(0.7).strokeColor('#dddddd').stroke();
-        doc.moveDown(0.2);
+        doc.moveDown(0.15);
         doc.font('Helvetica').fontSize(8.5).fillColor('#111111');
       };
       const bullet = (t: string) => {
-        doc.text('•  ' + t, { lineGap: 2 });
-        doc.moveDown(0.08);
+        doc.text('•  ' + t, { lineGap: 1 });
+        doc.moveDown(0.05);
       };
 
       section('Objetivo');
       doc.text(
         'Desenvolvedor Front-End Júnior em React/Next.js buscando oportunidade remota para construir aplicações web e mobile escaláveis e com boa experiência de usuário.',
-        { lineGap: 2 }
+        { lineGap: 1 }
       );
 
       section('Resumo');
       doc.text(
         'Desenvolvedor Front-End com experiência prática em React, TypeScript, Next.js e React Native, do design à publicação. Autor do Prazo Certo, aplicação multiplataforma com Supabase/PostgreSQL, autenticação, permissões por papel e IA generativa (Gemini/OpenAI). Portfólio 3D interativo com React, Three.js e Tailwind CSS, deploy na Vercel. Uso diário de IA generativa e engenharia de prompts. Busco oportunidade remota como Desenvolvedor Front-End Júnior React.' +
         (keywords.length ? ` Alinhado aos requisitos da vaga: ${keywords.slice(0, 6).join(', ')}.` : ''),
-        { lineGap: 2 }
+        { lineGap: 1 }
       );
 
       section('Skills');
@@ -523,9 +523,9 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
         const y = doc.y;
         doc.text('•  ' + left, 36, y);
         if (right) doc.text('•  ' + right, 300, y);
-        doc.y = y + 10;
+        doc.y = y + 9;
       }
-      doc.moveDown(0.1);
+      doc.moveDown(0.05);
 
       section('Projetos');
       doc.text('Prazo Certo', { continued: true });
@@ -542,6 +542,9 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       bullet('Currículo + portfólio responsivo com HTML, CSS e JavaScript. https://github.com/<usuario>/curriculo-html-rodrigo');
 
       section('Experiência');
+      doc.text('Desenvolvedor Full Stack', { continued: true });
+      doc.text('  Autônomo (Jan/2025 – Atual)', { align: 'right' });
+      bullet('Desenvolvimento autônomo de sites e aplicativos de ponta a ponta (front-end e back-end). Autor do Prazo Certo (React Native, TypeScript, Expo, Supabase/PostgreSQL, IA generativa, CI/CD), além de portfólio 3D, landing pages e currículo HTML bilíngue com deploy na Vercel.');
       doc.text('Técnico de Informática', { continued: true });
       doc.text('  Autônomo (Jan/2014 – Dez/2024)', { align: 'right' });
       bullet('Mais de 10 anos de experiência em atendimento ao cliente, diagnóstico e resolução de problemas técnicos, gestão do próprio negócio, suporte e organização.');

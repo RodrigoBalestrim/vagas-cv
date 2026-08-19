@@ -63,6 +63,11 @@ Documentação técnica, validações e testes em projetos próprios
 - Repositório: https://github.com/<usuario>/curriculo-html-rodrigo
 
 ## Experiência profissional
+### Desenvolvedor Full Stack — Autônomo (2025–atual)
+- Desenvolvimento autônomo de sites e aplicativos de ponta a ponta (front-end e back-end)
+- Autor do Prazo Certo (React Native, TypeScript, Expo, Supabase/PostgreSQL, IA generativa, CI/CD)
+- Portfólio 3D, landing pages e currículo HTML bilíngue com deploy na Vercel
+- Atendimento a clientes com entregas de sites e apps responsivos
 ### Técnico de Informática — Autônomo (2014–2024)
 - Atendimento ao cliente, diagnóstico e resolução de problemas técnicos
 - Montagem e manutenção de computadores, gestão do próprio negócio
