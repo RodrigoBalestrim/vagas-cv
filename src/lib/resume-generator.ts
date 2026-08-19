@@ -34,7 +34,7 @@ const SKILLS_PERFIL = [
 // Termos gerais de vaga de dev que reforçam ATS quando presentes na descrição
 const KEYWORDS_GERAIS = [
   'componentes reutilizáveis', 'componentes', 'code review', 'code reviews',
-  'estado', 'props', 'consumo de APIs', 'testes',
+  'estado', 'props', 'consumo de APIs', 'testes', 'jest',
 ];
 
 const normKey = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
