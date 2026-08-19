@@ -90,13 +90,10 @@ function fallbackTemplate(jobMatch?: Job): string {
     .skills-grid .skills-full { grid-column: 1 / -1; }
     .xp-row { display: flex; justify-content: space-between; font-weight: 600; font-size: 12.5px; margin-bottom: 3px; }
     .xp-date { font-weight: 600; font-size: 11px; color: #333; }
-    @media print { body { padding: 12px 6px; } .no-print { display: none; } }
-    .no-print { position: fixed; top: 8px; right: 12px; }
-    .no-print button { padding: 8px 12px; font-size: 13px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
+    @media print { body { padding: 12px 6px; } }
   </style>
   </head>
   <body>
-    <div class="no-print"><button onclick="window.print()">Salvar como PDF</button></div>
     <h1>${h}</h1>
     <p class="role">${role}</p>
     <div class="contact"><span><CIDADE, UF> · <EMAIL> · <TELEFONE> · GitHub: https://github.com/<usuario> · LinkedIn: https://www.linkedin.com/in/<usuario> · Portfólio: https://<portfolio>.vercel.app</span></div>
@@ -389,13 +386,10 @@ function markdownToHtml(cur: string, roleFallback: string): string {
     .skills-full { display: block !important; width: 100% !important; }
     .xp-row { display: flex; justify-content: space-between; font-weight: 600; font-size: 10.5px; margin-bottom: 2px; }
     .xp-date { font-weight: 600; font-size: 9.5px; color: #333; }
-    @media print { body { padding: 0; } .no-print { display: none; } @page { size: A4; margin: 12mm; } }
-    .no-print { position: fixed; top: 8px; right: 12px; }
-    .no-print button { padding: 8px 12px; font-size: 13px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
+    @media print { body { padding: 0; } @page { size: A4; margin: 12mm; } }
   </style>
   </head>
   <body>
-    <div class="no-print"><button onclick="window.print()">Salvar como PDF</button></div>
     <h1>${esc(name)}</h1>
     <p class="role">${esc(role)}</p>
     <div class="contact">${contact}</div>
