@@ -232,6 +232,7 @@ function gerarCurriculoPDF(vaga) {
         if (right) doc.text('•  ' + right, 300, y);
         doc.y = y + 9;
       }
+      doc.x = 36;
       doc.moveDown(0.05);
 
       section('Projetos');
