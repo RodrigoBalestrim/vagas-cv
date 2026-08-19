@@ -1,0 +1,41 @@
+{
+  "nome": "<NOME COMPLETO>",
+  "foco": "Front-end e Mobile com React, React Native e TypeScript",
+  "senioridade": "Júnior",
+  "modelo_trabalho": "Exclusivamente remoto",
+  "idiomas_vaga": ["Português (Brasil)", "vagas remotas em inglês compatíveis com nível B2"],
+  "stack_frontend": [
+    "React", "Next.js", "TypeScript", "JavaScript", "HTML5", "CSS3",
+    "Tailwind CSS", "Framer Motion", "Figma", "acessibilidade WCAG 2.1 AA"
+  ],
+  "stack_mobile": [
+    "React Native", "Expo", "Expo Router", "AsyncStorage",
+    "Push Notifications", "EAS Build"
+  ],
+  "backend_baas": [
+    "Supabase", "PostgreSQL", "SQLite", "Cloudflare D1", "Cloudflare Workers",
+    "Auth", "Storage", "Realtime", "Row Level Security", "REST APIs"
+  ],
+  "qualidade_e_entrega": [
+    "Git", "GitHub", "GitHub Actions", "CI/CD", "Vercel",
+    "ESLint", "Prettier", "Jest", "React Testing Library", "Playwright"
+  ],
+  "quero": [
+    "vagas front-end júnior com React, Next.js ou TypeScript",
+    "vagas mobile júnior com React Native ou Expo",
+    "vagas full-stack júnior com React e Supabase ou Node.js",
+    "vagas exclusivamente remotas"
+  ],
+  "evitar": [
+    "vagas sênior, especialista, principal ou tech lead",
+    "vagas cuja tecnologia principal seja Java/Spring, .NET, PHP, Go, Python ou Ruby",
+    "vagas presenciais ou híbridas"
+  ],
+  "palavras_chave_prioritarias": [
+    "react native", "expo", "react", "next.js", "nextjs", "typescript",
+    "javascript", "frontend", "front-end", "front end", "mobile", "android",
+    "supabase", "postgres", "postgresql", "sqlite", "cloudflare", "workers", "d1", "api", "rest", "tailwind", "figma",
+    "acessibilidade", "wcag", "git", "github actions", "ci/cd", "fullstack",
+    "full-stack", "full stack", "node.js", "nodejs"
+  ]
+}

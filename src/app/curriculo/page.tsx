@@ -1,0 +1,62 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+export default function CurriculoPage() {
+  const [html, setHtml] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/resume?format=html')
+      .then(res => res.text())
+      .then(setHtml)
+      .catch(() => setHtml('<p>Erro ao carregar currículo</p>'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'system-ui' }}>
+        <p>Carregando currículo...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: 'system-ui', maxWidth: '900px', margin: '0 auto', padding: '24px' }}>
+      <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <h1 style={{ fontSize: '28px', margin: '0 0 8px' }}>Currículo ATS-Friendly</h1>
+          <p style={{ color: '#6b7280', margin: 0 }}>Baseado no perfil do <NOME COMPLETO></p>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={() => window.print()} style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}>
+            Salvar como PDF
+          </button>
+          <a href="/api/resume?format=html" download="curriculo.html"
+            style={{ padding: '10px 20px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', textDecoration: 'none', fontSize: '14px' }}>
+            Baixar HTML
+          </a>
+        </div>
+      </header>
+
+      <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+        <iframe
+          srcDoc={html}
+          style={{ width: '100%', height: '90vh', border: 'none', minHeight: '800px' }}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        />
+      </div>
+
+      <div style={{ marginTop: '16px', padding: '16px', background: '#f9fafb', borderRadius: '8px', fontSize: '13px', color: '#374151' }}>
+        <strong>Dicas para ATS:</strong>
+        <ul style={{ margin: '8px 0 0 20px' }}>
+          <li>Use o botão "Salvar como PDF" no navegador (Ctrl+P / Cmd+P)</li>
+          <li>Mantenha formatação simples — sem colunas, gráficos ou imagens</li>
+          <li>Palavras-chave do perfil já estão embutidas no template</li>
+          <li>Para vaga específica, use a página de Vagas → "Gerar Currículo"</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
