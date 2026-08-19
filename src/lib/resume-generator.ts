@@ -39,6 +39,50 @@ const KEYWORDS_GERAIS = [
 
 const normKey = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+// Termos comuns de requisitos em vagas front-end/mobile (base de comparação p/ score de compatibilidade)
+const KEYWORDS_VAGA = [
+  'React', 'React Native', 'Next.js', 'TypeScript', 'JavaScript', 'Expo',
+  'HTML5', 'CSS3', 'Tailwind CSS', 'Bootstrap', 'Framer Motion', 'Three.js',
+  'Swiper', 'Supabase', 'PostgreSQL', 'APIs REST', 'REST API', 'GraphQL',
+  'Git', 'GitHub', 'Vercel', 'Figma', 'Node.js', 'GitHub Actions', 'CI/CD',
+  'testes', 'Jest', 'componentes reutilizáveis', 'code review', 'clean code',
+  'responsivo', 'design responsivo', 'mobile', 'web', 'front-end', 'frontend',
+  'typescript', 'redux', 'context api', 'hooks', 'acessibilidade', 'a11y',
+  'performance', 'SEO', 'SSR', 'SSG', 'Cloud', 'Docker', 'AWS', 'Azure',
+  'scrum', 'ágil', 'ingles', 'comunicacao',
+];
+
+// Calcula o % de compatibilidade entre a vaga e o perfil do candidato.
+// Retorna score (0-100) e as skills exigidas cobertas / não cobertas pelo perfil.
+export function calcularCompatibilidade(desc?: string): {
+  score: number;
+  matched: string[];
+  missing: string[];
+} {
+  if (!desc) return { score: 0, matched: [], missing: [] };
+  const d = normKey(desc);
+  const matched: string[] = [];
+  const missing: string[] = [];
+  for (const term of KEYWORDS_VAGA) {
+    if (!d.includes(normKey(term))) continue;
+    const coberto =
+      SKILLS_PERFIL.some(s => d.includes(normKey(s)) && normKey(s).includes(normKey(term))) ||
+      KEYWORDS_GERAIS.some(g => normKey(g) === normKey(term) || d.includes(normKey(g))) ||
+      (term === 'REST API' && d.includes('api rest')) ||
+      (term === 'responsivo' && d.includes('responsiv')) ||
+      (term === 'front-end' || term === 'frontend' ? true : false);
+    if (coberto) matched.push(term);
+    else missing.push(term);
+  }
+  const total = matched.length + missing.length;
+  const score = total === 0 ? 0 : Math.round((matched.length / total) * 100);
+  return { score, matched: dedupe(matched), missing: dedupe(missing) };
+}
+
+function dedupe(arr: string[]): string[] {
+  return [...new Set(arr.map(s => s.toLowerCase()).map(s => s.charAt(0).toUpperCase() + s.slice(1)))];
+}
+
 // Remove prefixos de localização do título da vaga, ex.: "[SÃO PAULO] Front-end" -> "Front-end"
 const cleanJobTitle = (titulo?: string): string => {
   if (!titulo) return '';

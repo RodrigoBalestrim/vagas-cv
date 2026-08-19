@@ -2,30 +2,48 @@
 
 import { useState, useRef } from 'react';
 
+interface Compatibilidade {
+  score: number;
+  matched: string[];
+  missing: string[];
+}
+
 export default function CurriculoPage() {
   const [html, setHtml] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [compat, setCompat] = useState<Compatibilidade | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const payload = () => ({
+    jobTitle: titulo.trim() || undefined,
+    jobDescription: descricao.trim() || undefined,
+  });
 
   const gerar = async () => {
     setLoading(true);
     setErro(false);
     try {
-      const res = await fetch('/api/resume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobTitle: titulo.trim() || undefined,
-          jobDescription: descricao.trim() || undefined,
-          format: 'html',
+      const [htmlRes, matchRes] = await Promise.all([
+        fetch('/api/resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload(), format: 'html' }),
         }),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      const text = await res.text();
+        fetch('/api/resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload(), format: 'match' }),
+        }),
+      ]);
+      if (!htmlRes.ok) throw new Error(String(htmlRes.status));
+      const text = await htmlRes.text();
       setHtml(text);
+      if (matchRes.ok) {
+        setCompat(await matchRes.json());
+      }
     } catch {
       setErro(true);
     } finally {
@@ -33,12 +51,32 @@ export default function CurriculoPage() {
     }
   };
 
-  const handlePrint = () => {
-    if (iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.focus();
-      iframeRef.current.contentWindow.print();
-    } else {
-      window.print();
+  const baixarPDF = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobTitle: titulo.trim() || undefined,
+          jobDescription: descricao.trim() || undefined,
+          format: 'pdf',
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `curriculo-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setErro(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,8 +89,8 @@ export default function CurriculoPage() {
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           {html && (
-            <button onClick={handlePrint} style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' }}>
-              Salvar como PDF
+            <button onClick={baixarPDF} disabled={loading} style={{ padding: '10px 20px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px' }}>
+              {loading ? 'Gerando PDF...' : 'Salvar como PDF'}
             </button>
           )}
           <button onClick={gerar} disabled={loading}
@@ -94,6 +132,58 @@ export default function CurriculoPage() {
       {erro && (
         <div style={{ padding: '16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', marginBottom: '16px' }}>
           Erro ao gerar currículo. Tente novamente.
+        </div>
+      )}
+
+      {compat && (
+        <div style={{ marginBottom: '24px', padding: '16px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', width: '72px', height: '72px' }}>
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="32" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+                <circle
+                  cx="36" cy="36" r="32" fill="none"
+                  stroke={compat.score >= 70 ? '#16a34a' : compat.score >= 40 ? '#d97706' : '#dc2626'}
+                  strokeWidth="8" strokeLinecap="round"
+                  strokeDasharray={`${(compat.score / 100) * 201} 201`}
+                  transform="rotate(-90 36 36)"
+                />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 700, color: '#111827' }}>
+                {compat.score}%
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: '240px' }}>
+              <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: '15px', color: '#111827' }}>
+                Compatibilidade com a vaga
+              </p>
+              <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>
+                {compat.score >= 70
+                  ? 'Boa compatibilidade — o currículo cobre a maior parte dos requisitos.'
+                  : compat.score >= 40
+                  ? 'Compatibilidade média — alguns requisitos da vaga não estão no perfil.'
+                  : 'Compatibilidade baixa — poucos requisitos da vaga estão no perfil.'}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+            <div>
+              <p style={{ margin: '0 0 6px', fontSize: '13px', fontWeight: 600, color: '#15803d' }}>✓ Cobertos pelo perfil</p>
+              {compat.matched.length ? (
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#374151' }}>{compat.matched.join(' · ')}</p>
+              ) : (
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#9ca3af' }}>Nenhum</p>
+              )}
+            </div>
+            <div>
+              <p style={{ margin: '0 0 6px', fontSize: '13px', fontWeight: 600, color: '#b91c1c' }}>✗ Não cobertos</p>
+              {compat.missing.length ? (
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#374151' }}>{compat.missing.join(' · ')}</p>
+              ) : (
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#9ca3af' }}>Nenhum</p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

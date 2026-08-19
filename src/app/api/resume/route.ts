@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { gerarCurriculoHTML, gerarCurriculoPDF } from '@/lib/resume-generator';
+import { gerarCurriculoHTML, gerarCurriculoPDF, calcularCompatibilidade } from '@/lib/resume-generator';
 import { Job } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -29,6 +29,10 @@ export async function POST(request: NextRequest) {
     }
 
     const html = await gerarCurriculoHTML(vaga);
+
+    if (format === 'match') {
+      return NextResponse.json(calcularCompatibilidade(body.jobDescription || vaga?.descricao));
+    }
 
     if (format === 'pdf') {
       const pdf = await gerarCurriculoPDF(vaga);
