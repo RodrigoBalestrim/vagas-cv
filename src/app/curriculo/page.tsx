@@ -22,6 +22,15 @@ export default function CurriculoPage() {
     jobDescription: descricao.trim() || undefined,
   });
 
+  const nomeArquivo = (ext: string) => {
+    const base = (titulo.trim() || 'curriculo')
+      .replace(/[\[\]()]/g, '')
+      .replace(/[^a-zA-Z0-9áéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+    return `${base}.${ext}`;
+  };
+
   const gerar = async () => {
     setLoading(true);
     setErro(false);
@@ -68,7 +77,7 @@ export default function CurriculoPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `curriculo-${Date.now()}.pdf`;
+      a.download = nomeArquivo('pdf');
       document.body.appendChild(a);
       a.click();
       a.remove();
