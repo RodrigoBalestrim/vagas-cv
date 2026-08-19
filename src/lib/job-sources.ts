@@ -412,6 +412,51 @@ async function fonteVagasComBr(limiteData: number, keywords: string[]): Promise<
   }
 }
 
+async function fonteNovoTrampo(limiteData: number, keywords: string[]): Promise<Job[]> {
+  const jobs: Job[] = [];
+  for (let page = 1; page <= 5; page++) {
+    try {
+      const url = page === 1 ? 'https://www.novotrampo.com.br/vagas' : `https://www.novotrampo.com.br/vagas/${page}`;
+      const html = await pegarTexto(url);
+      const blocos = html.split(/class="po-sm-12 po-lg-4 po-p-1"/).slice(1);
+
+      for (const bloco of blocos) {
+        const link = (bloco.match(/class="title-container"[\s\S]*?href="(https:\/\/atracaodetalentos\.totvs\.app\/[^"]+)"/) || [])[1];
+        const titulo = limpar((bloco.match(/title="([^"]+)"[\s\S]*?class="hiring-type"/) || [])[1] || '').trim();
+        const empresa = limpar((bloco.match(/data-tooltip="([^"]+)"[\s\S]*?class="company-link"/) || [])[1] || '').trim();
+        const local = limpar((bloco.match(/an-map-pin mr-4[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>/) || [])[1] || '').trim();
+        const regime = limpar((bloco.match(/an-briefcase mr-4[\s\S]*?<\/i>([\s\S]*?)<\/p>/) || [])[1] || '').trim();
+        const tag = (bloco.match(/class="po-mr-1 tag tag-[a-z]+">([^<]+)</) || [])[1] || '';
+        const dataStr = (bloco.match(/\b(\d{2}\/\d{2}\/\d{4})\b/) || [])[1] || '';
+
+        if (!link || !titulo) continue;
+        const [dd, mm, yyyy] = dataStr.split('/').map(Number);
+        const data = dd && mm && yyyy ? new Date(yyyy, mm - 1, dd).toISOString() : new Date().toISOString();
+        if (Date.parse(data) < limiteData) continue;
+
+        const text = norm(`${titulo} ${empresa} ${local} ${tag}`);
+        if (!keywords.some(k => text.includes(k))) continue;
+
+        jobs.push({
+          id: `novotrampo-${link.split('?')[0]}`,
+          fonte: 'Novo Trampo (TOTVS)',
+          titulo,
+          empresa,
+          local: `${local} · ${tag}`,
+          url: link,
+          descricao: [titulo, empresa, tag, regime].filter(Boolean).join('. ').slice(0, 500),
+          data,
+          brasileira: true,
+        });
+      }
+    } catch (e) {
+      console.warn(`Novo Trampo página ${page} falhou:`, e);
+      break;
+    }
+  }
+  return jobs;
+}
+
 export async function coletarVagas(dias: number = 30, keywords: string[] = []): Promise<Job[]> {
   const limiteData = Date.now() - dias * 24 * 60 * 60 * 1000;
   const kw = keywords.length > 0 ? keywords : [
@@ -430,8 +475,9 @@ export async function coletarVagas(dias: number = 30, keywords: string[] = []): 
     fonteHimalayas(limiteData, kw),
     fonteJobicy(limiteData, kw),
     fonteWorkingNomads(limiteData, kw),
-    fonteProgramathor(limiteData, kw),
+fonteProgramathor(limiteData, kw),
     fonteVagasComBr(limiteData, kw),
+    fonteNovoTrampo(limiteData, kw),
   ]);
 
   const vagas: Job[] = [];
