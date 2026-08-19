@@ -220,7 +220,7 @@ function gerarCurriculoPDF(vaga) {
         'React', 'TypeScript', 'Next.js', 'JavaScript (ES6+)', 'React Native, Expo',
         'HTML5, CSS3', 'Tailwind CSS, Bootstrap', 'Three.js, React Three Fiber, Framer Motion',
         'APIs REST', 'REST API', 'Supabase (PostgreSQL, Auth)', 'Git, GitHub, Vercel', 'Figma',
-        'Testes (Jest)', 'Responsive Design', 'Web Development', 'Front-end',
+        'Testes', 'Responsive Design', 'Web Development', 'Front-end',
         'Engenharia de prompts (Gemini/OpenAI)',
       ];
       // duas colunas: skills distribuídas à esquerda e à direita na mesma linha

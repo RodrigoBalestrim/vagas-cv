@@ -117,7 +117,7 @@ function fallbackTemplate(jobMatch?: Job): string {
     <section class="sec">
       <h2>Skills</h2>
       <div class="items">
-        ${habilidadeFoco}<div class="skills-grid"><p>React</p><p>TypeScript</p><p>Next.js</p><p>JavaScript (ES6+)</p><p>React Native, Expo</p><p>HTML5, CSS3</p><p>Tailwind CSS, Bootstrap</p><p>Three.js, React Three Fiber, Framer Motion</p><p>APIs REST</p><p>REST API</p><p>Supabase (PostgreSQL, Auth)</p><p>Git, GitHub, Vercel</p><p>Figma</p><p>Testes (Jest)</p><p>Responsive Design</p><p>Web Development</p><p>Front-end</p><p>Engenharia de prompts (Gemini/OpenAI)</p></div>
+        ${habilidadeFoco}<div class="skills-grid"><p>React</p><p>TypeScript</p><p>Next.js</p><p>JavaScript (ES6+)</p><p>React Native, Expo</p><p>HTML5, CSS3</p><p>Tailwind CSS, Bootstrap</p><p>Three.js, React Three Fiber, Framer Motion</p><p>APIs REST</p><p>REST API</p><p>Supabase (PostgreSQL, Auth)</p><p>Git, GitHub, Vercel</p><p>Figma</p><p>Testes</p><p>Responsive Design</p><p>Web Development</p><p>Front-end</p><p>Engenharia de prompts (Gemini/OpenAI)</p></div>
       </div>
     </section>
     <section class="sec">
@@ -513,7 +513,7 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
         'React', 'TypeScript', 'Next.js', 'JavaScript (ES6+)', 'React Native, Expo',
         'HTML5, CSS3', 'Tailwind CSS, Bootstrap', 'Three.js, React Three Fiber, Framer Motion',
         'APIs REST', 'REST API', 'Supabase (PostgreSQL, Auth)', 'Git, GitHub, Vercel', 'Figma',
-        'Testes (Jest)', 'Responsive Design', 'Web Development', 'Front-end',
+        'Testes', 'Responsive Design', 'Web Development', 'Front-end',
         'Engenharia de prompts (Gemini/OpenAI)',
       ];
       // duas colunas: skills distribuídas à esquerda e à direita na mesma linha
