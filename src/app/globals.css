@@ -87,5 +87,21 @@ button { font-family: inherit; }
 /* Layout helpers */
 .max-w-4xl { max-width: 56rem; margin-left: auto; margin-right: auto; }
 
-/* Restyling components */
+
+/* Additional UI helpers */
+.hero {
+  background: var(--color-primary);
+  color: #fff;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+.hero p { font-size: 1.25rem; margin-top: 1rem; }
+.container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem;
+}
+.card {
+  background: #fff; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
 /* Add any component‑specific styles here */
