@@ -10,6 +10,8 @@ interface ResumeModalContentProps {
 
 export default function ResumeModalContent({ vaga, onClose }: ResumeModalContentProps) {
   const [html, setHtml] = useState<string>('');
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [preview, setPreview] = useState<'html' | 'pdf'>('html');
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [mode, setMode] = useState<'auto' | 'manual'>('auto');
@@ -58,6 +60,8 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
       });
       const text = await res.text();
       setHtml(text);
+      setPdfUrl(null);
+      setPreview('html');
     } catch {
       setHtml('<p>Erro ao gerar currículo</p>');
     } finally {
@@ -89,34 +93,40 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     return `${base}.${ext}`;
   };
 
+  const buscarPDF = async () => {
+    const payload =
+      mode === 'manual'
+        ? { ...formData, format: 'pdf' }
+        : {
+            jobTitle: vaga?.titulo,
+            companyName: vaga?.empresa,
+            location: vaga?.local,
+            jobDescription: vaga?.descricao || vaga?.titulo,
+            format: 'pdf',
+          };
+    const res = await fetch('/api/resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    const blob = await res.blob();
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+    return url;
+  };
+
   const baixarPDF = async () => {
     setLoading(true);
     try {
-      const payload =
-        mode === 'manual'
-          ? { ...formData, format: 'pdf' }
-          : {
-              jobTitle: vaga?.titulo,
-              companyName: vaga?.empresa,
-              location: vaga?.local,
-              jobDescription: vaga?.descricao || vaga?.titulo,
-              format: 'pdf',
-            };
-      const res = await fetch('/api/resume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const url = pdfUrl || (await buscarPDF());
       const a = document.createElement('a');
       a.href = url;
       a.download = nomeArquivo('pdf');
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
     } catch {
       alert('Erro ao gerar PDF. Tente novamente.');
     } finally {
@@ -217,12 +227,41 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
             <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{progress}%</p>
           </div>
         )}
-        <iframe
-          ref={iframeRef}
-          srcDoc={html || '<div style="padding:40px;text-align:center;color:#6b7280;font-family:sans-serif">Selecione uma vaga ou preencha o formulário para gerar o currículo</div>'}
-          style={{ width: '100%', height: '100%', border: 'none', minHeight: '600px' }}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-print"
-        />
+        {html && (
+          <div style={{ display: 'flex', gap: '8px', padding: '8px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+            <button
+              onClick={() => setPreview('html')}
+              className={`btn btn-sm ${preview === 'html' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              👁️ HTML
+            </button>
+            <button
+              onClick={() => { if (!pdfUrl) buscarPDF(); setPreview('pdf'); }}
+              className={`btn btn-sm ${preview === 'pdf' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              📄 Pré-visualizar PDF
+            </button>
+          </div>
+        )}
+        {preview === 'html' ? (
+          <iframe
+            ref={iframeRef}
+            srcDoc={html || '<div style="padding:40px;text-align:center;color:#6b7280;font-family:sans-serif">Selecione uma vaga ou preencha o formulário para gerar o currículo</div>'}
+            style={{ width: '100%', height: '100%', border: 'none', minHeight: '600px' }}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-print"
+          />
+        ) : (
+          pdfUrl ? (
+            <iframe
+              src={pdfUrl}
+              style={{ width: '100%', height: '100%', border: 'none', minHeight: '600px' }}
+            />
+          ) : (
+            <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              Gerando pré-visualização do PDF...
+            </div>
+          )
+        )}
       </div>
 
       {/* Footer actions */}
