@@ -5,7 +5,7 @@ import { UserProfile, PERFIL_RODRIGO } from './user-profile';
 // Extrai dados de um currículo (texto puro) e devolve um UserProfile parcial.
 // Determinístico via regex — não precisa de IA.
 
-const SEP_SECAO = /(resumo|objetivo|skills|habilidades|compet[êe]ncias|projetos?|experi[êe]ncia|forma[cç][aã]o|educa[cç][aã]o|certifica[cç][oõ]es|idiomas|contato|dados pessoais|sobre)\s*[:]?/gi;
+const SEP_SECAO = /(resumo|objetivo|skills|habilidades|compet[êe]ncias|projetos?|experi[êe]ncia|forma[cç][aã]o|educa[cç][aã]o|certifica(?:dos?|[cç][oõ]es)|idiomas|contato|dados pessoais|sobre)\s*[:]?/gi;
 
 interface Secao {
   titulo: string;
@@ -70,8 +70,14 @@ function extrairNome(texto: string): string {
 }
 
 function extrairCidade(texto: string): string {
-  const m = texto.match(/(?:[A-ZÁ-Ú][a-zá-ú]+(?:\s+[A-ZÁ-Ú][a-zá-ú]+)?)\s*[-,]\s*([A-Z]{2}|[A-Za-zá-ú]+)\b/);
-  if (m) return m[0];
+  // Exige que o "estado" seja 2 letras maiúsculas (PR, SP...) OU que a cidade
+  // esteja em linha com vírgula — evita capturar "Front-End" de cargos.
+  const linhas = texto.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  for (const l of linhas) {
+    if (l.length > 90) continue;
+    const m = l.match(/([A-ZÁ-Ú][a-zá-ú]+(?:\s+[A-ZÁ-Ú][a-zá-ú]+)?)\s*[-,]\s*([A-Z]{2}|[A-ZÁ-Ú][a-zá-ú]+)(?![a-zá-ú])/);
+    if (m && !/End\b|\./.test(m[0])) return m[0].replace(/[-,]$/, '').trim();
+  }
   return '';
 }
 
@@ -141,6 +147,11 @@ function extrairItems(linhas: string[]): string[] {
 }
 
 export function parseCurriculo(texto: string): UserProfile {
+  // URLs podem ser quebradas no meio por quebras de linha do PDF — repara juntando.
+  // Só junta se a próxima linha parecer continuação de URL (começa com minúscula/dígito),
+  // pra não engolir títulos de seção como "EXPERIÊNCIA".
+  texto = texto.replace(/https?:\/\/[^\s]*(?:\n(?=[a-z0-9./?=_:~%+-])\S+)*/g, m => m.replace(/\n/g, ''));
+
   const perfil: UserProfile = {
     ...PERFIL_RODRIGO,
     nome: '', resumo: '',
@@ -195,11 +206,23 @@ export async function extrairTextoDoPDF(file: File): Promise<string> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const linhas = content.items
-      .filter((it: any) => typeof it.str === 'string' && it.str.trim())
-      .map((it: any) => it.str);
-    // agrupa itens que estão na mesma linha (mesmo y aproximado) — fallback simples: junta com espaço
-    texto += linhas.join(' ') + '\n';
+    // pdf.js devolve os itens achatados (palavras, não linhas).
+    // Agrupa por coordenada Y para reconstruir as linhas reais do PDF.
+    const itens = content.items.filter((it: any) => typeof it.str === 'string' && it.str.trim());
+    const linhas: string[] = [];
+    let atual: string[] = [];
+    let lastY: number | null = null;
+    for (const it of itens as any[]) {
+      const y = it.transform?.[5] ?? 0;
+      if (lastY !== null && Math.abs(y - lastY) > 2) {
+        linhas.push(atual.join(' '));
+        atual = [];
+      }
+      atual.push(it.str);
+      lastY = y;
+    }
+    if (atual.length) linhas.push(atual.join(' '));
+    texto += linhas.join('\n') + '\n';
   }
   return texto;
 }
