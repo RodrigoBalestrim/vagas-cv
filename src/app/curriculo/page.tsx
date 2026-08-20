@@ -151,17 +151,34 @@ export default function CurriculoPage() {
             <p className="muted" style={{ margin: 0 }}>Baseado no perfil de {nomeExibido}</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {html && (
+            {!semPerfil && html && (
               <button onClick={baixarPDF} disabled={loading} className="btn btn-primary">
                 {loading ? 'Gerando PDF...' : '⬇️ Baixar PDF'}
               </button>
             )}
-            <button onClick={gerar} disabled={loading} className="btn btn-success">
-              {loading ? 'Gerando...' : 'Gerar Currículo'}
-            </button>
+            {!semPerfil && (
+              <button onClick={gerar} disabled={loading} className="btn btn-success">
+                {loading ? 'Gerando...' : 'Gerar Currículo'}
+              </button>
+            )}
           </div>
         </header>
 
+        {semPerfil && (
+          <div className="card center" style={{ padding: '48px 32px', marginBottom: '24px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📝</div>
+            <h2 style={{ margin: '0 0 8px', fontSize: '20px' }}>Configure seu perfil primeiro</h2>
+            <p className="muted" style={{ maxWidth: '520px', margin: '0 auto 20px', fontSize: '14px' }}>
+              Para gerar um currículo com seus dados, preencha seu perfil ou envie seu currículo em PDF
+              — os campos são preenchidos automaticamente.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href="/perfil" className="btn btn-primary">⚙️ Preencher / Importar meu perfil</a>
+            </div>
+          </div>
+        )}
+
+        {!semPerfil && (
         <div className="card" style={{ padding: '22px 24px', marginBottom: '24px' }}>
           <div style={{ display: 'grid', gap: '16px', maxWidth: '700px' }}>
             <div className="field">
@@ -185,12 +202,6 @@ export default function CurriculoPage() {
             </div>
           </div>
         </div>
-
-        {semPerfil && (
-          <div className="alert alert-warn" style={{ marginBottom: '16px' }}>
-            ⚠️ Você ainda não preencheu seu perfil. O currículo será gerado com o perfil de exemplo até você
-            configurar seus dados em <a href="/perfil" style={{ fontWeight: 700 }}>Meu Perfil</a>.
-          </div>
         )}
 
         {erro && (
@@ -259,7 +270,7 @@ export default function CurriculoPage() {
           </div>
         )}
 
-        {!html && !loading && (
+        {!semPerfil && !html && !loading && (
           <div className="card center" style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', color: 'var(--text-muted)', padding: '32px' }}>
             <div style={{ fontSize: '52px' }}>📄</div>
             <p style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: 'var(--text)' }}>Cole a descrição da vaga acima e clique em "Gerar Currículo".</p>

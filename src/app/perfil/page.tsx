@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { carregarPerfil, salvarPerfil } from '@/lib/perfil-store';
-import { UserProfile, PROFILE_VAZIO, PERFIL_RODRIGO } from '@/lib/user-profile';
+import { UserProfile, PROFILE_VAZIO } from '@/lib/user-profile';
+import { extrairTextoDoPDF, parseCurriculo } from '@/lib/parse-curriculo';
 
 export default function PerfilPage() {
   const { user, loading } = useAuth();
@@ -13,7 +14,26 @@ export default function PerfilPage() {
   const [carregado, setCarregado] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const [preenchido, setPreenchido] = useState(false);
+  const [importando, setImportando] = useState(false);
+  const [erroImport, setErroImport] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const importarPDF = async (file: File) => {
+    setImportando(true);
+    setErroImport('');
+    try {
+      const texto = await extrairTextoDoPDF(file);
+      if (!texto.trim()) throw new Error('PDF vazio ou sem texto (escaneado?)');
+      const p = parseCurriculo(texto);
+      setPerfil(prev => ({ ...prev, ...p }));
+      setSalvo(false);
+    } catch (e: any) {
+      setErroImport(e?.message || 'Falha ao ler o PDF.');
+    } finally {
+      setImportando(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -23,12 +43,7 @@ export default function PerfilPage() {
     }
     (async () => {
       const p = await carregarPerfil(user.uid);
-      if (p.nome) {
-        setPerfil(p);
-      } else {
-        setPerfil(PERFIL_RODRIGO);
-        setPreenchido(true);
-      }
+      setPerfil(p.nome ? p : PROFILE_VAZIO);
       setCarregado(true);
     })();
   }, [user, loading, router]);
@@ -89,11 +104,27 @@ export default function PerfilPage() {
           </div>
         )}
 
-        {preenchido && (
-          <div className="alert alert-warn" style={{ marginBottom: '16px' }}>
-            ⚠️ Este é o perfil de exemplo (<NOME COMPLETO>). Substitua pelos seus dados e clique em <strong>Salvar perfil</strong> para usar o seu.
+        <div className="card" style={{ padding: '24px', marginBottom: '24px', borderColor: 'var(--primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+            <h2 style={{ fontSize: '16px', margin: 0 }}>📄 Importar do currículo (PDF)</h2>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/pdf"
+              style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) importarPDF(f); }}
+            />
           </div>
-        )}
+          <p className="muted" style={{ margin: '0 0 16px', fontSize: '13px' }}>
+            Envie seu currículo em PDF e os campos abaixo serão preenchidos automaticamente (nome, contato, skills, projetos, experiência, formação...). Depois revise e salve.
+          </p>
+          <button onClick={() => fileRef.current?.click()} disabled={importando} className="btn btn-primary">
+            {importando ? '⏳ Lendo PDF...' : '📤 Escolher PDF do currículo'}
+          </button>
+          {erroImport && (
+            <p style={{ color: 'var(--danger)', fontSize: '13px', margin: '10px 0 0' }}>⚠️ {erroImport} (tente um PDF com texto, não escaneado/imagem).</p>
+          )}
+        </div>
 
         <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
           <h2 style={{ fontSize: '16px', marginBottom: '16px' }}>Identificação</h2>
