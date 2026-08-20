@@ -114,7 +114,7 @@ export default function CurriculoPage() {
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {html && (
               <button onClick={baixarPDF} disabled={loading} className="btn btn-primary">
-                {loading ? 'Gerando PDF...' : '⬇️ Salvar como PDF'}
+                {loading ? 'Gerando PDF...' : '⬇️ Baixar PDF'}
               </button>
             )}
             <button onClick={gerar} disabled={loading} className="btn btn-success">
@@ -228,7 +228,7 @@ export default function CurriculoPage() {
           <strong style={{ color: 'var(--text)' }}>Dicas para ATS:</strong>
           <ul style={{ margin: '8px 0 0 20px', lineHeight: 1.8 }}>
             <li>Cole a descrição da vaga para preencher o currículo automaticamente com o foco da vaga</li>
-            <li>Use "Salvar como PDF" (ou Ctrl+P / Cmd+P) para exportar em PDF</li>
+            <li>Use "Baixar PDF" (ou Ctrl+P / Cmd+P) para exportar em PDF</li>
             <li>Mantenha formatação simples — sem colunas, gráficos ou imagens</li>
             <li>Palavras-chave do perfil já estão embutidas no template</li>
             <li>Para vaga específica, use a página de Vagas → "Gerar Currículo"</li>

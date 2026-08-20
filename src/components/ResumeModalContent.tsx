@@ -228,7 +228,7 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
       {/* Footer actions */}
       <div style={{ padding: '16px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
         <button onClick={onClose} className="btn btn-ghost btn-sm">Fechar</button>
-        <button onClick={baixarPDF} className="btn btn-primary btn-sm">⬇️ Salvar PDF</button>
+        <button onClick={baixarPDF} className="btn btn-primary btn-sm">⬇️ Baixar PDF</button>
       </div>
     </div>
   );

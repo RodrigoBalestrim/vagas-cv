@@ -516,13 +516,23 @@ export async function gerarCurriculoHTML(jobMatch?: Job): Promise<string> {
 }
 
 // Gera um PDF A4 real com pdfkit a partir do perfil (mesmo conteúdo do fallbackTemplate)
+// Ajusta automaticamente o tamanho da fonte/espaçamento para preencher bem a página:
+// - conteúdo curto -> fonte e espaçamento maiores
+// - conteúdo longo  -> reduz para caber em 1 página
 export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
+  const A4_HEIGHT = 842;
+  const MARGIN = 36;
+  const usable = A4_HEIGHT - MARGIN * 2;
+
+  const draw = (scale: number) => new Promise<{ buffer: Buffer; pages: number; used: number }>((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margin: 36, info: { Title: 'Currículo - <NOME COMPLETO>' } });
+      const doc = new PDFDocument({ size: 'A4', margin: MARGIN, info: { Title: 'Currículo - <NOME COMPLETO>' } });
       const chunks: Buffer[] = [];
       doc.on('data', (c: Buffer) => chunks.push(c));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('end', () => {
+        const pages = doc.bufferedPageRange().count;
+        resolve({ buffer: Buffer.concat(chunks), pages, used: (pages - 1) * usable + Math.max(0, doc.y - MARGIN) });
+      });
       doc.on('error', reject);
 
       const h = profile.nome;
@@ -531,39 +541,43 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
         : 'DESENVOLVEDOR FRONT-END JÚNIOR';
       const keywords = extractJobKeywords(jobMatch?.descricao || '');
 
+      const fs = (n: number) => n * scale;      // fonte
+      const sp = (n: number) => n * scale;      // espaçamento
+      const gap = Math.max(0.5, 1 * scale);     // lineGap
+
       // Cabeçalho
-      doc.font('Helvetica-Bold').fontSize(17).fillColor('#111111').text(h);
-      doc.moveDown(0.1);
-      doc.font('Helvetica-Bold').fontSize(10).fillColor('#111111').text(role);
-      doc.moveDown(0.1);
-      doc.font('Helvetica').fontSize(7.5).fillColor('#333333').text(
+      doc.font('Helvetica-Bold').fontSize(fs(17)).fillColor('#111111').text(h);
+      doc.moveDown(sp(0.1));
+      doc.font('Helvetica-Bold').fontSize(fs(10)).fillColor('#111111').text(role);
+      doc.moveDown(sp(0.1));
+      doc.font('Helvetica').fontSize(fs(7.5)).fillColor('#333333').text(
         '<CIDADE, UF> · <EMAIL> · <TELEFONE> · GitHub: https://github.com/<usuario> · LinkedIn: https://www.linkedin.com/in/<usuario> · Portfólio: https://<portfolio>.vercel.app'
       );
 
       const section = (titulo: string) => {
-        doc.moveDown(0.3);
-        doc.font('Helvetica-Bold').fontSize(9.5).fillColor('#111111').text(titulo);
-        doc.moveDown(0.03);
-        doc.moveTo(36, doc.y).lineTo(559, doc.y).lineWidth(0.7).strokeColor('#dddddd').stroke();
-        doc.moveDown(0.15);
-        doc.font('Helvetica').fontSize(8.5).fillColor('#111111');
+        doc.moveDown(sp(0.3));
+        doc.font('Helvetica-Bold').fontSize(fs(9.5)).fillColor('#111111').text(titulo);
+        doc.moveDown(sp(0.03));
+        doc.moveTo(MARGIN, doc.y).lineTo(595.28 - MARGIN, doc.y).lineWidth(0.7).strokeColor('#dddddd').stroke();
+        doc.moveDown(sp(0.15));
+        doc.font('Helvetica').fontSize(fs(8.5)).fillColor('#111111');
       };
       const bullet = (t: string) => {
-        doc.text('•  ' + t, { lineGap: 1 });
-        doc.moveDown(0.05);
+        doc.text('•  ' + t, { lineGap: gap });
+        doc.moveDown(sp(0.05));
       };
 
       section('Objetivo');
       doc.text(
         'Desenvolvedor Front-End Júnior em React/Next.js buscando oportunidade remota para construir aplicações web e mobile escaláveis e com boa experiência de usuário.',
-        { lineGap: 1 }
+        { lineGap: gap }
       );
 
       section('Resumo');
       doc.text(
         'Desenvolvedor Front-End com experiência prática em React, TypeScript, Next.js e React Native, do design à publicação. Autor do Prazo Certo, aplicação multiplataforma com Supabase/PostgreSQL, autenticação, permissões por papel e IA generativa (Gemini/OpenAI). Portfólio 3D interativo com React, Three.js e Tailwind CSS, deploy na Vercel. Uso diário de IA generativa e engenharia de prompts. Busco oportunidade remota como Desenvolvedor Front-End Júnior React.' +
         (keywords.length ? ` Alinhado aos requisitos da vaga: ${keywords.slice(0, 6).join(', ')}.` : ''),
-        { lineGap: 1 }
+        { lineGap: gap }
       );
 
       section('Skills');
@@ -578,8 +592,8 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       // coluna única: até 4 skills por linha, ordem de leitura linear (ATS-safe)
       for (let i = 0; i < skillsList.length; i += 4) {
         const linha = skillsList.slice(i, i + 4).join('  •  ');
-        doc.text('•  ' + linha, { lineGap: 1 });
-        doc.moveDown(0.05);
+        doc.text('•  ' + linha, { lineGap: gap });
+        doc.moveDown(sp(0.05));
       }
 
       section('Projetos');
@@ -630,4 +644,39 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       reject(e);
     }
   });
+
+  return (async () => {
+    let scale = 1;
+    let result = await draw(scale);
+
+    // Ajuste iterativo (máx. 8 tentativas)
+    for (let i = 0; i < 8; i++) {
+      const fill = result.used / usable;
+
+      if (result.pages > 1) {
+        // conteúdo estourou a página: reduz escala proporcionalmente
+        scale = Math.max(0.55, scale * (usable / Math.max(result.used, 1)) * 0.97);
+        result = await draw(scale);
+        continue;
+      }
+
+      if (fill < 0.90) {
+        // conteúdo curto: aumenta fonte/espaçamento para preencher melhor
+        scale = Math.min(1.45, scale * (0.97 / Math.max(fill, 0.1)));
+        result = await draw(scale);
+        continue;
+      }
+
+      if (fill > 0.995) {
+        // muito justo: reduz um pouco para não cortar
+        scale = Math.max(0.55, scale * 0.95);
+        result = await draw(scale);
+        continue;
+      }
+
+      break; // preenchimento ideal (90%-99.5% da página)
+    }
+
+    return result.buffer;
+  })();
 }
