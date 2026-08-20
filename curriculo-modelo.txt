@@ -1,0 +1,77 @@
+Rodrigo Washington Balestrim
+Desenvolvedor Front-End Júnior
+Mandaguaçu, Paraná
+wbalestrim1@gmail.com
++55 44 99707-5042
+https://github.com/RodrigoBalestrim
+https://www.linkedin.com/in/rodrigo-balestrim-9a68b3212
+https://portfolio-3d-eight-nu.vercel.app
+
+OBJETIVO
+Desenvolvedor Front-End Júnior em React/Next.js, buscando oportunidade remota para construir aplicações web e mobile escaláveis e com boa experiência de usuário.
+
+RESUMO
+Desenvolvedor Front-End com experiência prática em React, Next.js, React Native e TypeScript, construindo aplicações web e mobile completas — do design à publicação. Autor de 3 produtos autorais publicados (Prazo Certo, Vagas CV e portfólio 3D), com foco em automação via IA generativa, boas práticas de segurança (RLS, autenticação server-side) e deploy contínuo. Utilizo IA generativa e engenharia de prompts no dia a dia para acelerar pesquisa, prototipação e revisão de código. Perfil organizado e comunicativo, com forte interesse em consolidar carreira em tecnologia.
+
+SKILLS
+React
+TypeScript
+Next.js
+JavaScript (ES6+)
+React Native
+Expo
+Expo Router
+HTML5
+CSS3
+Tailwind CSS
+Bootstrap
+Framer Motion
+Three.js
+React Three Fiber
+Swiper
+Supabase
+PostgreSQL
+Firebase
+APIs REST
+Node.js
+AsyncStorage
+Git
+GitHub
+GitHub Actions (CI/CD)
+Vercel
+AWS
+Figma
+Jest
+React Testing Library
+Playwright
+ESLint
+Prettier
+Responsive Design
+
+EXPERIÊNCIA
+Desenvolvedor Full Stack — Autônomo (Jan/2025 – Atual) — Desenvolvimento autônomo de sites e aplicativos de ponta a ponta (front-end e back-end). Entreguei 3 produtos autorais publicados em produção (Prazo Certo, Vagas CV e portfólio 3D) com ciclo completo: design, implementação, autenticação, banco de dados, CI/CD e deploy na Vercel. Integrei IA generativa para análise de compatibilidade e geração de currículos ATS. Atendimento a clientes com entregas de sites e apps responsivos.
+Técnico de Informática — Autônomo (Jan/2014 – Dez/2024) — Atendimento ao cliente, diagnóstico e resolução de problemas técnicos, montagem e manutenção de computadores, gestão do próprio negócio, suporte e organização. Mantive alta taxa de retenção de clientes por meio de suporte direto e solução ágil de falhas, gerenciando agenda, orçamentos e relacionamento com fornecedores.
+
+PROJETOS
+Vagas CV — Currículo ATS com IA — (Mar/2026 – Atual) — Plataforma web completa que busca, ranqueia e gera currículos ATS prontos para download. Automatizei a extração das keywords da vaga e a injeção delas no currículo, com parser determinístico de seções (contato, skills, projetos, experiência, formação, certificados, idiomas). Implementei login multi-usuário seguro com Firebase Authentication (e-mail/senha e Google) e isolamento de dados por usuário no Firestore via regras owner-only e validação de token no servidor com Firebase Admin SDK. Automatizei a geração de PDF com ajuste automático de página e importação por upload em 3 formatos (PDF, .docx e TXT). Deploy contínuo na Vercel. Repositório: https://github.com/RodrigoBalestrim/vagas-cv
+Prazo Certo — (Jan/2025 – Atual) — Aplicativo multiplataforma (Android e Web) de gerenciamento de validade de produtos. Entreguei 5 papéis de permissão (owner, admin, manager, stockist, viewer) com auditoria de ações, via controle de acesso no servidor com Supabase (PostgreSQL + Row Level Security). Automatizei a entrada de produtos com leitor de código de barras EAN-13 com peso variável e reconhecimento por foto via IA generativa (Gemini/OpenAI) em Edge Functions, reduzindo o tempo de cadastro manual. Incluí relatórios em PDF, notificações push e suporte offline (AsyncStorage). Build de APK automatizado via GitHub Actions (CI/CD). Repositório: https://github.com/RodrigoBalestrim/prazo-certo-app
+Portfólio 3D Interativo — (Jan/2025) — Portfólio com Next.js, React, Three.js, React Three Fiber e Tailwind CSS. Layout 100% responsivo em 3 breakpoints, com animações via Framer Motion e Swiper e componentes 3D otimizados. Deploy na Vercel. https://github.com/RodrigoBalestrim/portfolio-rodrigo-balestrim
+Prazo Certo Landing Page — (Jan/2025) — Landing page do Prazo Certo com Next.js e TypeScript, deploy na Vercel. https://github.com/RodrigoBalestrim/prazo-certo-landing
+Currículo HTML Bilíngue — (Jan/2025) — Currículo bilíngue + portfólio responsivo com HTML, CSS e JavaScript, deploy na Vercel. https://github.com/RodrigoBalestrim/curriculo-html-rodrigo
+
+FORMAÇÃO
+Análise de Dados e Desenvolvimento — UniCesumar (Jan/2022 – Dez/2024)
+Análise e Projeto de Software — IFRS / Aprenda Mais (Ago/2026)
+Desenvolvimento Full Stack — Programador BR (2021)
+HTML/CSS — Curso em Vídeo (2020)
+
+CERTIFICADOS
+Programação em Pares de IA com o GitHub Copilot
+Prompt Engineering: Aprenda a Conversar com uma IA Generativa
+CorelDRAW — Cursos Maringá (2020)
+Montagem e Manutenção de Computadores — Online Informática (2013)
+
+IDIOMAS
+Português — nativo
+Inglês — técnico (leitura de documentação)
+Espanhol — básico

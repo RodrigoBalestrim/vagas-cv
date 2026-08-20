@@ -96,8 +96,10 @@ function extrairProjetos(linhas: string[]): UserProfile['projetos'] {
     const pm = item.match(PERIODO);
     if (pm) {
       if (atual) out.push(atual);
-      const antes = item.slice(0, pm.index).replace(/[—–|:\s]+$/, '').trim();
-      const depois = item.slice((pm.index || 0) + pm[0].length).replace(/^[—–|:\s]+/, '').trim();
+      // Remove parênteses/colchetes ao redor do período (ex.: "(Mar/2026 – Atual)")
+      // para não sobrarem no nome nem na descrição.
+      const antes = item.slice(0, pm.index).replace(/[—–|:(\s]+$/, '').replace(/[(\[]+$/, '').trim();
+      const depois = item.slice((pm.index || 0) + pm[0].length).replace(/^[—–|:)\s]+/, '').replace(/^[)\]]+/, '').trim();
       atual = { nome: antes || item, periodo: pm[0].trim(), descricao: depois };
     } else if (atual) {
       atual.descricao = atual.descricao ? atual.descricao + ' ' + item : item;
@@ -188,7 +190,9 @@ export function parseCurriculo(texto: string): UserProfile {
     else if (/forma|curs|educa/i.test(t)) perfil.formacao = extrairFormacao(sec.linhas);
     else if (/certif/i.test(t)) perfil.certificados = extrairItems(sec.linhas);
     else if (/idioma/i.test(t)) perfil.idiomas = extrairItems(sec.linhas);
-    else if (/resumo|objetivo|sobre/i.test(t)) perfil.resumo = sec.linhas.join(' ');
+    // OBJETIVO → campo "objetivo"; RESUMO/SOBRE → campo "resumo" (separados no site)
+    else if (/objetiv/i.test(t)) perfil.objetivo = sec.linhas.join(' ');
+    else if (/resumo|sobre/i.test(t)) perfil.resumo = sec.linhas.join(' ');
     else if (/contato|dados pessoais/i.test(t)) {
       if (!perfil.email) perfil.email = extrairEmail(sec.linhas.join(' '));
       if (!perfil.telefone) perfil.telefone = extrairTelefone(sec.linhas.join(' '));
