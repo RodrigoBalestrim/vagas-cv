@@ -324,6 +324,11 @@ REGRAS ATS (críticas):
 - Encoding limpo (acentos corretos)
 - Keywords EXATAS da descrição da vaga injetadas de forma natural
 - Currículo em PORTUGUÊS (a menos que a vaga peça inglês)
+- Bullets de conquistas com estrutura X-Y-Z: Ação → Método → Resultado numérico
+  (ex.: "Reduzi o cadastro manual em ~70% ao integrar reconhecimento por foto via IA em Edge Functions")
+- NUNCA inventar números: use apenas métricas presentes no perfil do candidato
+  (quantidade de produtos, papéis, formatos, telas, prazos, clientes) ou estimativas conservadoras sem exagero
+- Cada bullet de projeto/experiência deve começar com verbo forte no passado (Entreguei, Implementei, Reduzi, Automatizei)
 
 FORMATO EXATO (obrigatório — será convertido pra HTML estilizado automaticamente):
 # <Nome completo>
@@ -340,11 +345,11 @@ FORMATO EXATO (obrigatório — será convertido pra HTML estilizado automaticam
 - <skill>
 
 **Projetos**
-- <Nome do projeto> — <descrição curta em 1-2 linhas>
+- <Nome do projeto> — <período> — <conquista com estrutura X-Y-Z em 1-2 linhas>
 
 **Experiência**
 - <Cargo> — <Empresa> (<período>)
-- <descrição curta>
+- <conquista com estrutura X-Y-Z em 1-2 linhas>
 
 **Formação**
 - <Curso> — <Instituição> (<ano>)
