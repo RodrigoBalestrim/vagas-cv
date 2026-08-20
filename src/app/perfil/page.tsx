@@ -216,8 +216,8 @@ export default function PerfilPage() {
                   const projetos = [...perfil.projetos]; projetos[i] = { ...pr, descricao: e.target.value }; set('projetos', projetos);
                 }} />
               </div>
-              <button className="btn btn-sm btn-danger" onClick={() => set('projetos', perfil.projetos.filter((_, j) => j !== i))}>
-                Remover
+              <button className="btn btn-sm btn-ghost" onClick={() => set('projetos', perfil.projetos.filter((_, j) => j !== i))}>
+                ✕ Remover
               </button>
             </div>
           ))}
@@ -256,8 +256,8 @@ export default function PerfilPage() {
                   const experiencia = [...perfil.experiencia]; experiencia[i] = { ...e, descricao: ev.target.value }; set('experiencia', experiencia);
                 }} />
               </div>
-              <button className="btn btn-sm btn-danger" onClick={() => set('experiencia', perfil.experiencia.filter((_, j) => j !== i))}>
-                Remover
+              <button className="btn btn-sm btn-ghost" onClick={() => set('experiencia', perfil.experiencia.filter((_, j) => j !== i))}>
+                ✕ Remover
               </button>
             </div>
           ))}
@@ -290,8 +290,8 @@ export default function PerfilPage() {
                   const formacao = [...perfil.formacao]; formacao[i] = { ...f, periodo: ev.target.value }; set('formacao', formacao);
                 }} />
               </div>
-              <button className="btn btn-sm btn-danger" onClick={() => set('formacao', perfil.formacao.filter((_, j) => j !== i))}>
-                Remover
+              <button className="btn btn-sm btn-ghost" onClick={() => set('formacao', perfil.formacao.filter((_, j) => j !== i))}>
+                ✕ Remover
               </button>
             </div>
           ))}
