@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Job } from '@/types';
 import JobCard from '@/components/JobCard';
 import ResumeModalContent from '@/components/ResumeModalContent';
-import AuthStatus from '@/components/AuthStatus';
+import SiteHeader from '@/components/SiteHeader';
 import { useAuth } from '@/components/AuthProvider';
 
 export default function VagasPage() {
@@ -64,20 +64,7 @@ export default function VagasPage() {
 
   return (
     <div>
-      <header className="site-header no-print">
-        <div className="inner">
-          <div className="brand">
-            <span className="logo">⚡</span>
-            Vagas CV
-          </div>
-          <nav className="site-nav">
-            <a href="/" className="nav-link">Início</a>
-            <a href="/vagas" className="nav-link active">Buscar Vagas</a>
-            <a href="/curriculo" className="nav-link">Gerar Currículo</a>
-            <AuthStatus />
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="page">
         <header style={{ marginBottom: '20px' }}>

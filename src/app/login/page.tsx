@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuth } from '@/components/AuthProvider';
+import SiteHeader from '@/components/SiteHeader';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,19 +60,7 @@ export default function LoginPage() {
 
   return (
     <div>
-      <header className="site-header no-print">
-        <div className="inner">
-          <div className="brand">
-            <span className="logo">⚡</span>
-            Vagas CV
-          </div>
-          <nav className="site-nav">
-            <a href="/" className="nav-link">Início</a>
-            <a href="/vagas" className="nav-link">Buscar Vagas</a>
-            <a href="/curriculo" className="nav-link">Gerar Currículo</a>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="page center" style={{ maxWidth: '460px', margin: '0 auto' }}>
         <div className="card" style={{ padding: '32px', marginTop: '40px' }}>

@@ -132,8 +132,9 @@ export function calcularCompatibilidade(desc?: string): {
   matched: string[];
   missing: string[];
   blocked: string[];
+  explicacao: string;
 } {
-  if (!desc) return { score: 0, matched: [], missing: [], blocked: [] };
+  if (!desc) return { score: 0, matched: [], missing: [], blocked: [], explicacao: 'Sem descrição de vaga para analisar.' };
   const normalizeToken = (s: string) => normKey(s).replace(/[^a-z0-9]/g, '');
   const d = normalizeToken(desc);
   // para detecção de bloqueio usamos a string com espaços/pontuação preservados
@@ -167,11 +168,28 @@ export function calcularCompatibilidade(desc?: string): {
     score = Math.max(5, Math.round(score * (1 - penalidade / 100)));
     score = Math.min(30, score);
   }
+
+  const m = dedupe(matched);
+  const miss = dedupe(missing);
+  const bl = dedupe(blocked);
+
+  let explicacao: string;
+  if (bl.length) {
+    explicacao = `A vaga exige ${bl.join(', ')}${miss.length ? `, além de requisitos como ${miss.slice(0, 4).join(', ')}` : ''} — tecnologias fora do perfil. Seu perfil cobre ${m.length ? m.slice(0, 6).join(', ') : 'poucos requisitos'}, mas a exigência de ${bl[0]} é decisiva: mesmo com o restante alinhado, o score é limitado a 30% para refletir o desalinhamento de stack.`;
+  } else if (score >= 70) {
+    explicacao = `Boa compatibilidade: o perfil cobre os principais requisitos da vaga (${m.slice(0, 8).join(', ')}). ${miss.length ? `Faltam apenas ${miss.slice(0, 4).join(', ')} — dá para mitigar destacando habilidades transferíveis no currículo.` : 'Não foram detectados requisitos fora do perfil.'}`;
+  } else if (score >= 40) {
+    explicacao = `Compatibilidade média: o perfil cobre ${m.slice(0, 6).join(', ')}. A vaga também pede ${miss.slice(0, 5).join(', ') || 'requisitos não cobertos'} — vale reforçar esses pontos ou destacar projetos que os exercitem.`;
+  } else {
+    explicacao = `Compatibilidade baixa: poucos requisitos da vaga estão no perfil (${m.slice(0, 4).join(', ') || 'nenhum detectado'}). A vaga pede ${miss.slice(0, 5).join(', ') || 'tecnologias fora do escopo'} — candidatura tem baixa chance de passar no filtro ATS.`;
+  }
+
   return {
     score,
-    matched: dedupe(matched),
-    missing: dedupe(missing),
-    blocked: dedupe(blocked),
+    matched: m,
+    missing: miss,
+    blocked: bl,
+    explicacao,
   };
 }
 

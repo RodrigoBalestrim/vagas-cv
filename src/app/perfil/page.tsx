@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import SiteHeader from '@/components/SiteHeader';
 import { carregarPerfil, salvarPerfil } from '@/lib/perfil-store';
 import { UserProfile, PROFILE_VAZIO } from '@/lib/user-profile';
 import { extrairTextoDeArquivo, parseCurriculo } from '@/lib/parse-curriculo';
@@ -70,19 +71,7 @@ export default function PerfilPage() {
 
   return (
     <div>
-      <header className="site-header no-print">
-        <div className="inner">
-          <div className="brand">
-            <span className="logo">⚡</span>
-            Vagas CV
-          </div>
-          <nav className="site-nav">
-            <a href="/" className="nav-link">Início</a>
-            <a href="/vagas" className="nav-link">Buscar Vagas</a>
-            <a href="/curriculo" className="nav-link">Gerar Currículo</a>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="page" style={{ maxWidth: '860px', margin: '0 auto' }}>
         <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>

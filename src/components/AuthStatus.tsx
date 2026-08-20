@@ -11,8 +11,22 @@ export default function AuthStatus() {
 
   if (user) {
     return (
-      <>
-        <span className="chip" title={user.email || undefined}>👤 {user.email?.split('@')[0] || 'Conta'}</span>
+      <div className="auth-status">
+        {user.photoURL ? (
+          <img
+            src={user.photoURL}
+            alt={user.displayName || user.email || 'Foto de perfil'}
+            className="auth-avatar"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span className="auth-avatar auth-avatar-fallback" aria-hidden>
+            {((user.displayName || user.email || 'C')[0] || 'C').toUpperCase()}
+          </span>
+        )}
+        <span className="auth-name" title={user.email || undefined}>
+          {user.displayName || user.email?.split('@')[0] || 'Conta'}
+        </span>
         <a href="/perfil" className="nav-link">Meu Perfil</a>
         <button
           onClick={async () => { await logout(); router.push('/'); }}
@@ -21,7 +35,7 @@ export default function AuthStatus() {
         >
           Sair
         </button>
-      </>
+      </div>
     );
   }
 

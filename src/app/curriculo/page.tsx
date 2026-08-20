@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import SiteHeader from '@/components/SiteHeader';
 import { carregarPerfil } from '@/lib/perfil-store';
 import { UserProfile } from '@/lib/user-profile';
 
@@ -11,6 +12,7 @@ interface Compatibilidade {
   matched: string[];
   missing: string[];
   blocked: string[];
+  explicacao?: string;
 }
 
 export default function CurriculoPage() {
@@ -114,29 +116,7 @@ export default function CurriculoPage() {
 
   return (
     <div>
-      <header className="site-header no-print">
-        <div className="inner">
-          <div className="brand">
-            <span className="logo">⚡</span>
-            Vagas CV
-          </div>
-          <nav className="site-nav">
-            <a href="/" className="nav-link">Início</a>
-            <a href="/vagas" className="nav-link">Buscar Vagas</a>
-            <a href="/curriculo" className="nav-link active">Gerar Currículo</a>
-            <a href="/perfil" className="nav-link">Meu Perfil</a>
-            {user && (
-              <button
-                onClick={async () => { await logout(); router.push('/'); }}
-                className="btn btn-sm btn-ghost"
-                style={{ marginLeft: '4px' }}
-              >
-                Sair
-              </button>
-            )}
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <div className="page">
         <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -227,13 +207,15 @@ export default function CurriculoPage() {
                   Compatibilidade com a vaga
                 </p>
                 <p className="muted" style={{ margin: 0, fontSize: '13px' }}>
-                  {compat.blocked.length
-                    ? `⚠️ A vaga exige tecnologia fora do seu perfil (${compat.blocked.join(', ')}).`
-                    : compat.score >= 70
-                    ? 'Boa compatibilidade — o currículo cobre a maior parte dos requisitos.'
-                    : compat.score >= 40
-                    ? 'Compatibilidade média — alguns requisitos da vaga não estão no perfil.'
-                    : 'Compatibilidade baixa — poucos requisitos da vaga estão no perfil.'}
+                  {compat.explicacao || (
+                    compat.blocked.length
+                      ? `⚠️ A vaga exige tecnologia fora do seu perfil (${compat.blocked.join(', ')}).`
+                      : compat.score >= 70
+                      ? 'Boa compatibilidade — o currículo cobre a maior parte dos requisitos.'
+                      : compat.score >= 40
+                      ? 'Compatibilidade média — alguns requisitos da vaga não estão no perfil.'
+                      : 'Compatibilidade baixa — poucos requisitos da vaga estão no perfil.'
+                  )}
                 </p>
               </div>
             </div>

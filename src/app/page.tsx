@@ -1,22 +1,10 @@
 import FeatureCard from '@/components/FeatureCard';
-import AuthStatus from '@/components/AuthStatus';
+import SiteHeader from '@/components/SiteHeader';
 
 export default function HomePage() {
   return (
     <div>
-      <header className="site-header no-print">
-        <div className="inner">
-          <div className="brand">
-            <span className="logo">⚡</span>
-            Vagas CV
-          </div>
-          <nav className="site-nav">
-            <a href="/vagas" className="nav-link">Buscar Vagas</a>
-            <a href="/curriculo" className="nav-link">Gerar Currículo</a>
-            <AuthStatus />
-          </nav>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="hero">
         <span className="eyebrow">🚀 Buscador + Currículo ATS em um só lugar</span>
