@@ -185,7 +185,7 @@ function fallbackTemplate(jobMatch?: Job): string {
     <section class="sec">
       <h2>Projetos</h2>
       <div class="items">
-        <div class="xp-row"><span class="xp-title">- Prazo Certo</span><span class="xp-date">Jan/2025 – Atual</span></div><p>Aplicativo multiplataforma (Android/Web) de gestão de validade de produtos com React Native, TypeScript, Expo e Supabase/PostgreSQL, integração com IA generativa para reconhecimento de produto por imagem e CI/CD via GitHub Actions. Repositório: https://github.com/<usuario>/prazo-certo-app</p><div class="xp-row"><span class="xp-title">- Prazo Certo Landing</span><span class="xp-date">Jan/2025</span></div><p>Landing page do Prazo Certo com Next.js e TypeScript. https://github.com/<usuario>/prazo-certo-landing</p><div class="xp-row"><span class="xp-title">- Portfólio 3D Interativo</span><span class="xp-date">Jan/2025</span></div><p>Portfólio com Next.js, React, Three.js, React Three Fiber e Tailwind CSS, animações com Framer Motion, 100% responsivo, deploy na Vercel. https://<portfolio>.vercel.app</p><div class="xp-row"><span class="xp-title">- Currículo HTML Bilíngue</span><span class="xp-date">Jan/2025</span></div><p>Currículo + portfólio responsivo com HTML, CSS e JavaScript. https://github.com/<usuario>/curriculo-html-rodrigo</p>
+        <div class="xp-row"><span class="xp-title">- Prazo Certo</span><span class="xp-date">Jan/2025 – Atual</span></div><p>Aplicativo multiplataforma (Android/Web) de gestão de validade de produtos com React Native, TypeScript, Expo e Supabase/PostgreSQL. Autenticação com 5 papéis de permissão (owner, admin, manager, stockist, viewer), leitor de código de barras EAN-13, notificações push, relatórios em PDF e suporte offline (AsyncStorage). Build de APK automatizado a cada atualização via GitHub Actions (CI/CD). Integração com IA generativa para reconhecimento de produto por imagem. Repositório: https://github.com/<usuario>/prazo-certo-app</p><div class="xp-row"><span class="xp-title">- Prazo Certo Landing</span><span class="xp-date">Jan/2025</span></div><p>Landing page do Prazo Certo com Next.js e TypeScript. https://github.com/<usuario>/prazo-certo-landing</p><div class="xp-row"><span class="xp-title">- Portfólio 3D Interativo</span><span class="xp-date">Jan/2025</span></div><p>Portfólio com Next.js, React, Three.js, React Three Fiber e Tailwind CSS, animações com Framer Motion, 100% responsivo, deploy na Vercel. https://<portfolio>.vercel.app</p><div class="xp-row"><span class="xp-title">- Currículo HTML Bilíngue</span><span class="xp-date">Jan/2025</span></div><p>Currículo + portfólio responsivo com HTML, CSS e JavaScript. https://github.com/<usuario>/curriculo-html-rodrigo</p>
       </div>
     </section>
     <section class="sec">
@@ -589,17 +589,13 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
         'Testes', 'Responsive Design', 'Web Development', 'Front-end',
         'Engenharia de prompts (Gemini/OpenAI)',
       ];
-      // coluna única: até 4 skills por linha, ordem de leitura linear (ATS-safe)
-      for (let i = 0; i < skillsList.length; i += 4) {
-        const linha = skillsList.slice(i, i + 4).join('  •  ');
-        doc.text('•  ' + linha, { lineGap: gap });
-        doc.moveDown(sp(0.05));
-      }
+      // coluna única: 1 skill por linha, ordem de leitura linear (ATS-safe)
+      skillsList.forEach(s => bullet(s));
 
       section('Projetos');
       doc.text('Prazo Certo', { continued: true });
       doc.text('  Jan/2025 – Atual', { align: 'right' });
-      bullet('Aplicativo multiplataforma (Android/Web) de gestão de validade de produtos com React Native, TypeScript, Expo e Supabase/PostgreSQL, integração com IA generativa para reconhecimento de produto por imagem e CI/CD via GitHub Actions. Repositório: https://github.com/<usuario>/prazo-certo-app');
+      bullet('Aplicativo multiplataforma (Android/Web) de gestão de validade de produtos com React Native, TypeScript, Expo e Supabase/PostgreSQL. Autenticação com 5 papéis de permissão (owner, admin, manager, stockist, viewer), leitor de código de barras EAN-13, notificações push, relatórios em PDF e suporte offline (AsyncStorage). Build de APK automatizado a cada atualização via GitHub Actions (CI/CD). Integração com IA generativa para reconhecimento de produto por imagem. Repositório: https://github.com/<usuario>/prazo-certo-app');
       doc.text('Prazo Certo Landing', { continued: true });
       doc.text('  Jan/2025', { align: 'right' });
       bullet('Landing page do Prazo Certo com Next.js e TypeScript. https://github.com/<usuario>/prazo-certo-landing');
