@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { coletarVagas } from '@/lib/job-sources';
-import { ranquear } from '@/lib/scoring';
+import { ranquear, PerfilScoring, detectarSenioridade } from '@/lib/scoring';
 import profileData from '@/lib/profile.json';
 
-// API GET /api/jobs?dias=&minScore=&brasil=&junior=
+// API GET /api/jobs?dias=&minScore=&brasil=&junior=&skills=&nivel=
 // Busca vagas nas fontes externas, ranqueia pelo perfil e retorna
 // os resultados agrupados por área (React Native, Full Stack, Next.js...).
+// Parâmetros opcionais de personalização:
+//   skills  — lista de skills do usuário separadas por vírgula (URL-encoded)
+//   nivel   — nível alvo do usuário: jr | pleno | sr (se omitido, infere do cargo)
+// Quando não há skills, usa o perfil padrão (profile.json).
 
 // Garante que cada requisição (ex.: clique em "Atualizar") busque as fontes de novo
 export const dynamic = 'force-dynamic';
@@ -20,12 +24,26 @@ export async function GET(request: NextRequest) {
   const soJunior = searchParams.get('junior') === 'true';
 
   try {
-    // Keywords prioritárias do perfil (vindas de profile.json) para filtrar
-    const keywords = profileData.palavras_chave_prioritarias;
+    // Perfil do usuário (personalização): skills separadas por vírgula + nível alvo
+    const perfil: PerfilScoring | undefined = searchParams.get('skills')
+      ? {
+          skills: (searchParams.get('skills') || '')
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean),
+          senioridade: (searchParams.get('nivel') as PerfilScoring['senioridade']) || undefined,
+        }
+      : undefined;
+
+    // Keywords prioritárias do perfil para filtrar as fontes:
+    // skills do usuário quando logado, senão as do profile.json
+    const keywords = perfil?.skills?.length
+      ? perfil.skills
+      : profileData.palavras_chave_prioritarias;
     const vagas = await coletarVagas(dias, keywords);
 
     // Ranqueia: pontua cada vaga (score 0-100) e ordena
-    let resultados = ranquear(vagas);
+    let resultados = ranquear(vagas, perfil);
 
     // Filtro anti-ruído: exclui vagas que não são dev (marketing, vendas, RH, etc.)
     const NAO_DEV = /\b(sales|account manager|account executive|business development|recruiter|recruiting|marketing|brand protection|compliance|analyst|negotiator|infanteer|military|service desk|support specialist|customer success|customer service|head of|product strategy|revenue|bd assistant|gtm|accounting|finance|legal|hr |human resources|project manager|product manager|scrum master|designer|ui designer|ux designer|data scientist|data engineer|qa manual|tester|content reviewer|content writer|reviewer|data management|data analyst|accounting|operations|administrative|coordinator|assistant|specialist|counsel|paralegal|writer|editor|copywriter)\b/i;

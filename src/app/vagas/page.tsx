@@ -1,15 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Job } from '@/types';
 import JobCard from '@/components/JobCard';
 import ResumeModalContent from '@/components/ResumeModalContent';
 import SiteHeader from '@/components/SiteHeader';
 import { useAuth } from '@/components/AuthProvider';
+import { carregarPerfil } from '@/lib/perfil-store';
+import { detectarSenioridade } from '@/lib/scoring';
 
 // Página "Buscar Vagas" (rota /vagas): consome /api/jobs, exibe filtros
 // (dias, score mínimo, Brasil, só júnior) e os cards ranqueados de vagas.
+// Quando o usuário está logado, envia as skills do perfil dele (Firestore)
+// para que o score de cada vaga seja personalizado por pessoa.
 export default function VagasPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -19,13 +23,39 @@ export default function VagasPage() {
   const [filtros, setFiltros] = useState({ dias: 30, minScore: 0, apenasBrasil: false, soJunior: false });
   const [resumeTarget, setResumeTarget] = useState<Job | null>(null); // vaga aberta no modal
 
+  // Perfil do usuário logado (para score personalizado). Guardado em ref
+  // para a busca não depender de estado extra; null = deslogado → perfil padrão.
+  const perfilRef = useRef<{ skills: string[]; nivel?: string } | null>(null);
+
+  // Carrega o perfil do usuário logado (só uma vez, após o auth resolver)
+  useEffect(() => {
+    let ativo = true;
+    if (authLoading) return;
+    if (user) {
+      carregarPerfil(user.uid).then(p => {
+        if (!ativo) return;
+        const skills = (p.skills || []).filter(Boolean);
+        perfilRef.current = skills.length
+          ? { skills, nivel: detectarSenioridade(p.cargo) }
+          : null;
+        buscarVagas();
+      });
+    } else {
+      perfilRef.current = null;
+      buscarVagas();
+    }
+    return () => { ativo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading]);
+
   // Busca as vagas sempre que algum filtro mudar
   useEffect(() => {
-    buscarVagas();
+    if (!authLoading) buscarVagas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtros.dias, filtros.minScore, filtros.apenasBrasil, filtros.soJunior]);
 
-  // Chama a API de vagas passando os filtros como query string
+  // Chama a API de vagas passando os filtros como query string.
+  // Se houver perfil logado, inclui skills+nivel para score personalizado.
   const buscarVagas = async () => {
     setLoading(true);
     setError(null);
@@ -36,6 +66,11 @@ export default function VagasPage() {
         brasil: String(filtros.apenasBrasil),
         junior: String(filtros.soJunior),
       });
+      const perfil = perfilRef.current;
+      if (perfil) {
+        params.set('skills', perfil.skills.join(','));
+        if (perfil.nivel) params.set('nivel', perfil.nivel);
+      }
       const res = await fetch(`/api/jobs?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro desconhecido');

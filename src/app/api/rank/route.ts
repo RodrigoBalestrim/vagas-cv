@@ -1,19 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { coletarVagas } from '@/lib/job-sources';
-import { ranquear } from '@/lib/scoring';
+import { ranquear, PerfilScoring } from '@/lib/scoring';
 import profileData from '@/lib/profile.json';
 
 // API POST /api/rank — retorna os detalhes de match de UMA vaga específica
-// (score, nível, keywords, alertas). Recebe { jobId } ou { jobUrl } no corpo.
+// (score, nível, keywords, alertas). Recebe { jobId } ou { jobUrl } no corpo,
+// e opcionalmente { skills, nivel } para ranqueamento personalizado.
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { jobId, jobUrl } = body;
+    const { jobId, jobUrl, skills, nivel } = body;
+
+    // Perfil do usuário (personalização), se enviado no corpo
+    const perfil: PerfilScoring | undefined = Array.isArray(skills) && skills.length
+      ? { skills, senioridade: nivel || undefined }
+      : undefined;
 
     // Re-busca as vagas (mesma lógica da listagem) para localizar a vaga
-    const keywords = profileData.palavras_chave_prioritarias;
+    const keywords = perfil?.skills?.length
+      ? perfil.skills
+      : profileData.palavras_chave_prioritarias;
     const vagas = await coletarVagas(30, keywords);
-    const ranqueadas = ranquear(vagas);
+    const ranqueadas = ranquear(vagas, perfil);
 
     const vaga = ranqueadas.find(v => v.id === jobId || v.url === jobUrl);
 

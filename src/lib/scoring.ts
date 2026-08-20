@@ -26,6 +26,18 @@ const PENALIDADES = [
 // Normaliza texto para comparação (minúsculas, sem acentos)
 const norm = (s: string) => (s || '').toLowerCase();
 
+// Perfil do usuário para ranqueamento personalizado. Quando ausente, usa-se
+// o perfil padrão (profile.json / listas estáticas abaixo) — comportamento antigo.
+export interface PerfilScoring {
+  skills?: string[];                          // skills do usuário (do Firestore)
+  senioridade?: 'jr' | 'pleno' | 'sr' | '?';  // nível alvo do usuário (do cargo)
+}
+
+// Detecta a senioridade de um texto (cargo do usuário ou título de vaga)
+export function detectarSenioridade(texto: string): 'jr' | 'pleno' | 'sr' | '?' {
+  return nivel(texto);
+}
+
 // Detecta o nível da vaga a partir do título (JR / PLENO / SR)
 function nivel(titulo: string): 'jr' | 'pleno' | 'sr' | '?' {
   const t = ' ' + norm(titulo) + ' ';
@@ -43,15 +55,22 @@ function nivel(titulo: string): 'jr' | 'pleno' | 'sr' | '?' {
 // - keyword SECUNDÁRIA no título: +5 | na descrição: +2
 // - penalidade no título: -10
 // - bônus de nível (jr +40, pleno -5, sr -30) e vaga brasileira +10
-export function pontuar(vaga: Job) {
+// `perfil` (opcional) personaliza: skills do usuário substituem as CORE,
+// e a senioridade dele ajusta os bônus de nível (ex.: um pleno não recebe
+// o boost de "jr" nem a penalidade dura de "sr").
+export function pontuar(vaga: Job, perfil?: PerfilScoring) {
   const titulo = norm(vaga.titulo);
   const desc = norm(vaga.descricao);
+  // Skills do usuário viram as keywords CORE personalizadas
+  const coreList = perfil?.skills?.length
+    ? perfil.skills.map(norm).filter(Boolean)
+    : CORE;
   let score = 0;
   const combina = new Set<string>();
   let coreNoTitulo = false;
   const alertas: string[] = [];
 
-  for (const kw of CORE) {
+  for (const kw of coreList) {
     if (titulo.includes(kw)) {
       score += 16;
       combina.add(kw);
@@ -80,9 +99,21 @@ export function pontuar(vaga: Job) {
   }
 
   const nv = nivel(vaga.titulo);
-  if (nv === 'jr') score += 40;      // Boost júnior ainda mais
-  else if (nv === 'pleno') score -= 5; // Penalizar pleno leve
-  else if (nv === 'sr') score -= 30;   // Penalizar sênior forte
+  const alvo = perfil?.senioridade || 'jr';
+  // Bônus conforme o nível da vaga VS o nível alvo do usuário
+  if (alvo === 'jr') {
+    if (nv === 'jr') score += 40;
+    else if (nv === 'pleno') score -= 5;
+    else if (nv === 'sr') score -= 30;
+  } else if (alvo === 'pleno') {
+    if (nv === 'pleno') score += 35;      // pleno buscando pleno = bom
+    else if (nv === 'jr') score += 20;    // pleno aceita júnior
+    else if (nv === 'sr') score -= 20;    // sênior acima do alvo
+  } else if (alvo === 'sr') {
+    if (nv === 'sr') score += 40;
+    else if (nv === 'pleno') score += 20;
+    else if (nv === 'jr') score += 10;
+  }
 
   if (vaga.brasileira) score += 10;
 
@@ -99,7 +130,7 @@ export function pontuar(vaga: Job) {
     motivo,
     nivel: nv,
     coreNoTitulo,
-    temCore: [...combina].some(k => CORE.includes(k)),
+    temCore: [...combina].some(k => coreList.includes(k)),
     matchScore: score,
     matchedKeywords: [...combina],
     warnings: alertas,
@@ -107,11 +138,12 @@ export function pontuar(vaga: Job) {
 }
 
 // Ranqueia uma lista de vagas: pontua cada uma, descarta as sem match
-// (score 0) e as sênior, e ordena por score (e depois por brasileira).
-export function ranquear(vagas: Job[]): RankedJob[] {
+// (score 0) e as acima do nível alvo, e ordena por score (e depois por brasileira).
+export function ranquear(vagas: Job[], perfil?: PerfilScoring): RankedJob[] {
+  const alvo = perfil?.senioridade || 'jr';
   const comScore = vagas
-    .map(v => ({ ...v, ...pontuar(v) }))
-    .filter(v => (v.score ?? 0) > 0 && v.nivel !== 'sr');
+    .map(v => ({ ...v, ...pontuar(v, perfil) }))
+    .filter(v => (v.score ?? 0) > 0 && !(alvo === 'jr' && v.nivel === 'sr'));
   return comScore.sort((a, b) => ((b.score ?? 0) - (a.score ?? 0)) || (Number(b.brasileira) - Number(a.brasileira)));
 }
 
