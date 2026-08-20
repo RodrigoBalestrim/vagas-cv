@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { carregarPerfil, salvarPerfil } from '@/lib/perfil-store';
-import { UserProfile, PROFILE_VAZIO } from '@/lib/user-profile';
+import { UserProfile, PROFILE_VAZIO, PERFIL_RODRIGO } from '@/lib/user-profile';
 
 export default function PerfilPage() {
   const { user, loading } = useAuth();
@@ -13,6 +13,7 @@ export default function PerfilPage() {
   const [carregado, setCarregado] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [preenchido, setPreenchido] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -22,7 +23,12 @@ export default function PerfilPage() {
     }
     (async () => {
       const p = await carregarPerfil(user.uid);
-      setPerfil(p);
+      if (p.nome) {
+        setPerfil(p);
+      } else {
+        setPerfil(PERFIL_RODRIGO);
+        setPreenchido(true);
+      }
       setCarregado(true);
     })();
   }, [user, loading, router]);
@@ -80,6 +86,12 @@ export default function PerfilPage() {
         {salvo && (
           <div className="alert alert-success" style={{ marginBottom: '16px' }}>
             Perfil salvo com sucesso!
+          </div>
+        )}
+
+        {preenchido && (
+          <div className="alert alert-warn" style={{ marginBottom: '16px' }}>
+            ⚠️ Este é o perfil de exemplo (<NOME COMPLETO>). Substitua pelos seus dados e clique em <strong>Salvar perfil</strong> para usar o seu.
           </div>
         )}
 
