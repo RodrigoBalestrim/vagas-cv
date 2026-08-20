@@ -654,23 +654,23 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       const fill = best.used / usable; // preenchimento da última folha (0-1)
 
       if (best.pages === 1) {
-        // 1 folha: preencher moderadamente SEM derramar para a 2ª.
-        // Pouca informação = 1 folha é suficiente, pode sobrar espaço.
+        // 1 folha: preencher bem a folha (min 88%) SEM derramar para a 2ª.
+        if (process.env.DEBUG_PDF) console.log(`iter ${i} scale=${scale.toFixed(3)} pages=${best.pages} fill=${fill.toFixed(3)}`);
         if (fill > 0.995) {
           scale = Math.max(0.55, scale * 0.95);
           best = await draw(scale);
           continue;
         }
-        if (fill < 0.72) {
-          // conteúdo bem curto: dá um leve aumento de fonte, mas nunca derrama
+        if (fill < 0.88) {
+          // conteúdo curto: aumenta fonte/espaçamento pra preencher a folha, mas nunca derrama
           const lastOne = best;
-          scale = Math.min(1.3, scale * (0.90 / Math.max(fill, 0.1)));
+          scale = Math.min(1.45, scale * (0.93 / Math.max(fill, 0.1)));
           const r = await draw(scale);
           if (r.pages === 1) { best = r; continue; }
           best = lastOne;
           break;
         }
-        break; // preenchimento aceitável (72%-99.5%)
+        break; // preenchimento aceitável (88%-99.5%)
       }
 
       // 2+ folhas: preencher bem a última folha (sem cortar conteúdo)
