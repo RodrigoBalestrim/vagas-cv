@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Job } from '@/types';
 import JobCard from '@/components/JobCard';
 import ResumeModalContent from '@/components/ResumeModalContent';
 import AuthStatus from '@/components/AuthStatus';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function VagasPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [vagas, setVagas] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +128,14 @@ export default function VagasPage() {
         ) : (
           <div>
             {vagas.map(vaga => (
-              <JobCard key={vaga.id} vaga={vaga} onGenerateResume={setResumeTarget} />
+              <JobCard key={vaga.id} vaga={vaga} onGenerateResume={(v) => {
+                if (authLoading) return;
+                if (!user) {
+                  router.push('/login');
+                  return;
+                }
+                setResumeTarget(v);
+              }} />
             ))}
           </div>
         )}

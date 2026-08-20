@@ -8,12 +8,14 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   logout: () => Promise<void>;
+  getToken: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   logout: async () => {},
+  getToken: async () => '',
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -32,8 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
   };
 
+  const getToken = async (): Promise<string> => {
+    if (!user) return '';
+    try {
+      return await user.getIdToken();
+    } catch {
+      return '';
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, loading, logout, getToken }}>
       {children}
     </AuthContext.Provider>
   );

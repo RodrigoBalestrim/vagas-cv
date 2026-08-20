@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Job } from '@/types';
 import { useAuth } from '@/components/AuthProvider';
 import { carregarPerfil } from '@/lib/perfil-store';
-import { UserProfile, PERFIL_RODRIGO } from '@/lib/user-profile';
+import { UserProfile } from '@/lib/user-profile';
 
 interface ResumeModalContentProps {
   vaga?: Job;
@@ -12,7 +12,7 @@ interface ResumeModalContentProps {
 }
 
 export default function ResumeModalContent({ vaga, onClose }: ResumeModalContentProps) {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const [html, setHtml] = useState<string>('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [preview, setPreview] = useState<'html' | 'pdf'>('html');
@@ -31,19 +31,19 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
 
   useEffect(() => {
     if (!user) {
-      setPerfil(PERFIL_RODRIGO);
+      setPerfil(null);
       return;
     }
     (async () => {
       const p = await carregarPerfil(user.uid);
-      setPerfil(p.nome ? p : PERFIL_RODRIGO);
+      setPerfil(p.nome ? p : null);
     })();
   }, [user]);
 
-  const withPerfil = (payload: Record<string, unknown>) => ({
-    ...payload,
-    perfil: perfil && perfil.nome ? perfil : undefined,
-  });
+  const withAuth = async (payload: Record<string, unknown>) => {
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${await getToken()}` };
+    return fetch('/api/resume', { method: 'POST', headers, body: JSON.stringify(payload) });
+  };
 
   const startProgress = () => {
     setProgress(0);
@@ -67,18 +67,15 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     setLoading(true);
     startProgress();
     try {
-      const payload = withPerfil(data || {
+      const payload = {
         jobTitle: vaga?.titulo,
         companyName: vaga?.empresa,
         location: vaga?.local,
         jobDescription: vaga?.descricao || vaga?.titulo,
         format: 'html',
-      });
-      const res = await fetch('/api/resume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+        ...data,
+      };
+      const res = await withAuth(payload);
       const text = await res.text();
       setHtml(text);
       setPdfUrl(null);
@@ -101,7 +98,7 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setMode('manual');
-    generateResume(withPerfil({ ...formData, format: 'html' }) as any);
+    generateResume(formData);
   };
 
   const nomeArquivo = (ext: string) => {
@@ -115,22 +112,16 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
   };
 
   const buscarPDF = async () => {
-    const payload = withPerfil(
-      mode === 'manual'
-        ? { ...formData, format: 'pdf' }
-        : {
-            jobTitle: vaga?.titulo,
-            companyName: vaga?.empresa,
-            location: vaga?.local,
-            jobDescription: vaga?.descricao || vaga?.titulo,
-            format: 'pdf',
-          }
-    );
-    const res = await fetch('/api/resume', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    const payload = mode === 'manual'
+      ? { ...formData, format: 'pdf' }
+      : {
+          jobTitle: vaga?.titulo,
+          companyName: vaga?.empresa,
+          location: vaga?.local,
+          jobDescription: vaga?.descricao || vaga?.titulo,
+          format: 'pdf',
+        };
+    const res = await withAuth(payload);
     if (!res.ok) throw new Error(String(res.status));
     const blob = await res.blob();
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);

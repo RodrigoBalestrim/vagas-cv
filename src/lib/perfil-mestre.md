@@ -2,16 +2,17 @@
 
 > Fonte única de dados. Currículos por vaga são gerados a partir daqui.
 > Regra: sempre manter verdade factual — nunca inventar experiência.
+> ATENÇÃO: este arquivo não deve conter contato real; os dados pessoais
+> ficam no Firestore, no perfil de cada usuário autenticado.
 
 ## Contato
 - Nome: <NOME COMPLETO>
 - Cidade/UF: <CIDADE, UF> — Brasil
 - E-mail: <EMAIL>
 - Telefone: <TELEFONE>
-- GitHub: https://github.com/<usuario>
-- LinkedIn: https://www.linkedin.com/in/<usuario>
+- GitHub: https://github.com/<USUARIO>
+- LinkedIn: https://www.linkedin.com/in/<USUARIO>
 - Portfólio: https://<portfolio>.vercel.app
-- Behance: https://behance.net/<usuario>
 - CNH: sim (mencionar só se a vaga pedir)
 
 ## Cargo alvo
@@ -48,19 +49,15 @@ Documentação técnica, validações e testes em projetos próprios
 - Integração com Gemini/OpenAI via Edge Functions: reconhecimento de produto por foto, remoção automática de fundo (com retry em segundo plano), detecção de duplicidade
 - Build e distribuição automatizados de APK via GitHub Actions (CI/CD) — entregas testáveis a cada atualização
 - Leitor de código de barras com suporte a peso variável (EAN-13 de balança), notificações push, relatórios em PDF, suporte offline (AsyncStorage)
-- Repositório: https://github.com/<usuario>/prazo-certo-app
 ### Portfólio 3D Interativo — projeto pessoal
 - Stack: Next.js, React, Three.js, React Three Fiber, Tailwind CSS
 - Portfólio com elementos 3D, animações (Framer Motion, Swiper), 100% responsivo, deploy na Vercel
-- Repositório: https://github.com/<usuario>/<portfolio-repo>
 ### Prazo Certo Landing Page — projeto pessoal
 - Stack: Next.js, TypeScript
 - Landing page do Prazo Certo, deploy na Vercel
-- Repositório: https://github.com/<usuario>/prazo-certo-landing
 ### Currículo HTML (Bilíngue) — projeto pessoal
 - Stack: HTML, CSS, JavaScript
 - Currículo bilíngue + portfólio responsivo, deploy na Vercel
-- Repositório: https://github.com/<usuario>/curriculo-html-rodrigo
 
 ## Experiência profissional
 ### Desenvolvedor Full Stack — Autônomo (2025–atual)
@@ -81,8 +78,6 @@ Documentação técnica, validações e testes em projetos próprios
 - Análise de Dados e Desenvolvimento — UniCesumar (Jan/2022 – Dez/2024, 2 anos de curso)
 - Desenvolvimento Full Stack — Programador BR (2021)
 - HTML/CSS — Curso em Vídeo (2020)
-- CorelDRAW — Cursos Maringá (2020)
-- CorelDRAW + Photoshop — Cursos Maringá (2018)
 - Montagem e Manutenção de Computadores — Online Informática (2013)
 - Informática Avançada — Online Informática (2010)
 - Informática Básica — Online Informática (2010–2011)
@@ -97,26 +92,3 @@ Resolução de problemas, atenção aos detalhes, trabalho em equipe, comunicaç
 - [ ] Ordem das seções: Projetos antes de Experiência (sem experiência formal em dev)
 - [ ] Inglês técnico → "Inglês intermediário" se vaga pedir conversação? (só se verdade)
 - [ ] Não citar ferramentas de design antigas se vaga é 100% dev
-
-## Experiência encontrada no LinkedIn (index do buscador — CONFIRMAR)
-> Snippet do Google/DuckDuckGo do perfil https://br.linkedin.com/in/<usuario>-<ID_LINKEDIN> mostra experiências que NÃO estão no currículo. Confirmar se são suas e atualizar currículo.
-- TV Mandaguaçu — Montagem e Manutenção (2015–2019), Mandaguaçu-PR
-- Gráfica Exclusive ART — Finalista ART (2019–2021), Maringá-PR, Home office
-- Formação: UniCesumar (curso a confirmar)
-- Conexões: 6 (muito baixo — trava rankeamento de busca do LinkedIn)
-
-## Auditoria LinkedIn (2026-08-09) — status
-- [ ] Headline: hoje "Desenvolvedor Front-end | HTML, CSS, JavaScript, React, Nex..." (truncada) — trocar por versão com stack completa
-- [ ] About: preencher com resumo keyword-rich (rascunho abaixo)
-- [ ] Skills: adicionar skills exatas (lista abaixo)
-- [ ] Open to Work: ativar (busca mostra +40% InMails)
-- [ ] Experiências: conferir TV Mandaguaçu, Gráfica Exclusive ART, UniCesumar
-- [ ] Conexões: crescer pra 100+ (recrutadores, devs, colegas)
-- [ ] Featured: fixar Prazo Certo, portfólio 3D, currículo HTML
-- [ ] Publicar 1-2 posts/mês (atividade pesa no rankeamento)
-
-### Rascunho About (colar no LinkedIn)
-Desenvolvedor Front-End com experiência prática em React, Next.js, React Native e TypeScript, construindo aplicações web e mobile completas — do design à publicação. Autor do Prazo Certo, sistema multiplataforma (Android e Web) com banco de dados relacional Supabase/PostgreSQL, autenticação, controle de permissões por papel e integrações com IA generativa (Gemini/OpenAI) para reconhecimento de produto por imagem. Uso engenharia de prompts e IA no dia a dia para pesquisa, prototipação e revisão de código. Aberto a oportunidades júnior em desenvolvimento front-end e mobile, remoto ou presencial. Contato: <EMAIL> | <TELEFONE>
-
-### Skills para adicionar no LinkedIn
-React, Next.js, React Native, TypeScript, JavaScript, HTML5, CSS3, Tailwind CSS, Bootstrap, Expo, Supabase, PostgreSQL, APIs REST, Git, GitHub, Vercel, Figma, Framer Motion, Three.js, Engenharia de Prompts, Desenvolvimento Web, Desenvolvimento Mobile, UI Design, Responsive Design

@@ -41,3 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# dados pessoais / arquivos locais (nunca versionar)
+curriculo-para-importar.pdf
+test-mesma-vaga.pdf
+*.log

@@ -14,7 +14,7 @@ interface Compatibilidade {
 }
 
 export default function CurriculoPage() {
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, logout, getToken } = useAuth();
   const router = useRouter();
   const [perfil, setPerfil] = useState<UserProfile | null>(null);
   const [html, setHtml] = useState<string>('');
@@ -45,8 +45,14 @@ export default function CurriculoPage() {
   const payload = () => ({
     jobTitle: titulo.trim() || undefined,
     jobDescription: descricao.trim() || undefined,
-    perfil: perfil || undefined,
   });
+
+  const postResume = async (body: Record<string, unknown>) =>
+    fetch('/api/resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${await getToken()}` },
+      body: JSON.stringify(body),
+    });
 
   const nomeArquivo = (ext: string) => {
     const base = (titulo.trim() || 'curriculo')
@@ -58,11 +64,7 @@ export default function CurriculoPage() {
   };
 
   const buscarPDF = async () => {
-    const res = await fetch('/api/resume', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload(), format: 'pdf' }),
-    });
+    const res = await postResume({ ...payload(), format: 'pdf' });
     if (!res.ok) throw new Error(String(res.status));
     const blob = await res.blob();
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
@@ -76,16 +78,8 @@ export default function CurriculoPage() {
     setErro(false);
     try {
       const [htmlRes, matchRes] = await Promise.all([
-        fetch('/api/resume', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload(), format: 'html' }),
-        }),
-        fetch('/api/resume', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload(), format: 'match' }),
-        }),
+        postResume({ ...payload(), format: 'html' }),
+        postResume({ ...payload(), format: 'match' }),
       ]);
       if (!htmlRes.ok) throw new Error(String(htmlRes.status));
       const text = await htmlRes.text();

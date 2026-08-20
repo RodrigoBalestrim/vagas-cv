@@ -1,12 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import { gerarCurriculoHTML, gerarCurriculoPDF, calcularCompatibilidade } from '@/lib/resume-generator';
-import { UserProfile } from '@/lib/user-profile';
+import { UserProfile, PROFILE_VAZIO } from '@/lib/user-profile';
 import { Job } from '@/types';
+
+// Inicializa o Admin SDK uma única vez (server-side)
+function adminApp() {
+  if (getApps().length) return getApps()[0];
+  const key = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!key) throw new Error('FIREBASE_SERVICE_ACCOUNT não configurado');
+  return initializeApp({ credential: cert(JSON.parse(key)) });
+}
+
+async function userAutenticado(request: NextRequest): Promise<string | null> {
+  try {
+    const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
+    if (!token) return null;
+    const decoded = await getAuth(adminApp()).verifyIdToken(token);
+    return decoded.uid || null;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const uid = await userAutenticado(request);
+    if (!uid) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { jobId, jobUrl, jobDescription, jobTitle, companyName, location, format = 'html', perfil } = body;
+    const { jobId, jobUrl, jobDescription, jobTitle, companyName, location, format = 'html' } = body;
 
     let vaga: Job | undefined;
 
@@ -29,7 +56,10 @@ export async function POST(request: NextRequest) {
       vaga = (vagas.vagas || []).find((v: Job) => v.id === jobId || v.url === jobUrl);
     }
 
-    const perfilUsr = sanitizePerfil(perfil);
+    // Carrega o perfil DO PRÓPRIO usuário autenticado (Firestore) — nunca do body.
+    const doc = await getFirestore(adminApp()).collection('perfis').doc(uid).get();
+    const perfilUsr: UserProfile = sanitizePerfil(doc.exists ? doc.data() : undefined) || PROFILE_VAZIO;
+
     const html = await gerarCurriculoHTML(vaga, perfilUsr);
 
     if (format === 'match') {
@@ -67,7 +97,7 @@ export async function POST(request: NextRequest) {
 
 // Garante que só campos conhecidos do perfil sejam aceitos (evita campos arbitrários no PDF)
 function sanitizePerfil(raw: any): UserProfile | undefined {
-  if (!raw || typeof raw !== 'object' || !raw.nome) return undefined;
+  if (!raw || typeof raw !== 'object') return undefined;
   const str = (v: any) => (typeof v === 'string' ? v.slice(0, 5000) : '');
   const strArr = (v: any) => (Array.isArray(v) ? v.filter(x => typeof x === 'string').map(x => x.slice(0, 2000)).slice(0, 100) : []);
   const objArr = (v: any) =>

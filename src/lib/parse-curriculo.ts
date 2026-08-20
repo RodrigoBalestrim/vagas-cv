@@ -1,6 +1,6 @@
 'use client';
 
-import { UserProfile, PERFIL_RODRIGO } from './user-profile';
+import { UserProfile, PROFILE_VAZIO } from './user-profile';
 
 // Extrai dados de um currículo (texto puro) e devolve um UserProfile parcial.
 // Determinístico via regex — não precisa de IA.
@@ -163,9 +163,7 @@ export function parseCurriculo(texto: string): UserProfile {
   texto = texto.replace(/https?:\/\/[^\s]*(?:\n(?=[a-z0-9./?=_:~%+-])\S+)*/g, m => m.replace(/\n/g, ''));
 
   const perfil: UserProfile = {
-    ...PERFIL_RODRIGO,
-    nome: '', resumo: '',
-    skills: [], projetos: [], experiencia: [], formacao: [], certificados: [], idiomas: [],
+    ...PROFILE_VAZIO,
   };
   const urls = extrairURLs(texto);
   perfil.email = extrairEmail(texto);
@@ -248,10 +246,18 @@ async function extrairTextoDoDOCX(file: File): Promise<string> {
 // Suporta: .pdf (pdfjs), .docx (mammoth), .txt/.md (leitura direta).
 export async function extrairTextoDeArquivo(file: File): Promise<string> {
   const nome = (file.name || '').toLowerCase();
+
+  if (file.size > 15 * 1024 * 1024) {
+    throw new Error('Arquivo muito grande (máx. 15 MB).');
+  }
+
   const ehDOCX = nome.endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   const ehPDF = nome.endsWith('.pdf') || file.type === 'application/pdf';
   if (ehDOCX) return extrairTextoDoDOCX(file);
   if (ehPDF) return extrairTextoDoPDF(file);
   // fallback: tenta ler como texto puro (.txt, .md, etc.)
-  return file.text();
+  if (nome.endsWith('.txt') || nome.endsWith('.md') || file.type.startsWith('text/')) {
+    return file.text();
+  }
+  throw new Error('Formato não suportado. Envie PDF, Word (.docx) ou TXT.');
 }

@@ -1,6 +1,6 @@
 import { Profile, Job } from '@/types';
 import profileData from './profile.json';
-import { UserProfile, PERFIL_RODRIGO } from './user-profile';
+import { UserProfile, PROFILE_VAZIO } from './user-profile';
 import fs from 'node:fs';
 import path from 'node:path';
 // @ts-expect-error pdfkit não tem tipos TypeScript
@@ -9,9 +9,9 @@ import PDFDocument from 'pdfkit';
 const profile: Profile = profileData as Profile;
 
 // Perfil usado na geração. Se o usuário logado tiver perfil próprio (Firestore),
-// ele é passado aqui; senão usa o perfil fixo do Rodrigo (compatibilidade).
+// ele é passado aqui; senão usa perfil vazio (sem dados fictícios).
 const perfilDe = (perfil?: UserProfile): UserProfile =>
-  perfil && perfil.nome ? perfil : PERFIL_RODRIGO;
+  perfil && perfil.nome ? perfil : PROFILE_VAZIO;
 
 // Contato em uma linha (ATS-safe) a partir do perfil
 const linhaContato = (p: UserProfile): string =>
@@ -217,7 +217,7 @@ function fallbackTemplate(jobMatch?: Job, perfil?: UserProfile): string {
     : p.cargo.toUpperCase();
   const keywords = extractJobKeywords(jobMatch?.descricao || '');
   const resumoExtra = keywords.length
-    ? ` Alinhado aos requisitos da vaga: ${keywords.slice(0, 6).join(', ')}.`
+    ? ` Alinhado aos requisitos da vaga: ${keywords.slice(0, 6).map(esc).join(', ')}.`
     : '';
   const habilidadeFoco = keywords.length
     ? `<p class="skills-full"><strong>Foco da vaga:</strong> ${keywords.map(esc).join(', ')}</p>`
@@ -241,7 +241,7 @@ function fallbackTemplate(jobMatch?: Job, perfil?: UserProfile): string {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>${h} - Currículo</title>
+  <title>${esc(h)} - Currículo</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; max-width: 780px; margin: 0 auto; padding: 32px 40px; color: #1a1a1a; line-height: 1.45; font-size: 13px; }
@@ -260,9 +260,9 @@ function fallbackTemplate(jobMatch?: Job, perfil?: UserProfile): string {
   </style>
   </head>
   <body>
-    <h1>${h}</h1>
-    <p class="role">${role}</p>
-    <div class="contact"><span>${linhaContato(p)}</span></div>
+    <h1>${esc(h)}</h1>
+    <p class="role">${esc(role)}</p>
+    <div class="contact"><span>${esc(linhaContato(p))}</span></div>
 
     <section class="sec">
       <h2>Objetivo</h2>
@@ -439,7 +439,7 @@ async function callAI(title: string, description: string, perfil?: UserProfile):
 }
 
 // Converte markdown do currículo (do pipeline da extensão) em HTML estilizado
-const esc = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 // remove markdown links/negrito mantendo texto legível
 const cleanMd = (s: string) => s
