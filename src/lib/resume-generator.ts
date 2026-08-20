@@ -530,7 +530,7 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       const chunks: Buffer[] = [];
       doc.on('data', (c: Buffer) => chunks.push(c));
       doc.on('end', () => {
-        const pages = doc.bufferedPageRange().count;
+        const pages = (doc as any).page?.count || doc.bufferedPageRange().count || 1;
         resolve({ buffer: Buffer.concat(chunks), pages, used: (pages - 1) * usable + Math.max(0, doc.y - MARGIN) });
       });
       doc.on('error', reject);
@@ -679,7 +679,7 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
 
       if (lastFill < 0.80) {
         // última folha quase vazia: aumenta fonte/espaçamento para preenchê-la
-        scale = Math.min(1.55, scale * (0.95 / Math.max(lastFill, 0.1)));
+        scale = Math.min(1.3, scale * (0.95 / Math.max(lastFill, 0.1)));
         best = await draw(scale);
         continue;
       }
