@@ -85,7 +85,8 @@ input, textarea, select {
   gap: 16px;
   flex-wrap: wrap;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; color: var(--text); }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; color: var(--text); text-decoration: none; }
+.brand:hover { text-decoration: none; }
 .brand .logo {
   width: 34px; height: 34px; border-radius: 10px;
   background: linear-gradient(135deg, var(--primary), var(--accent));

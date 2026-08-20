@@ -19,10 +19,11 @@ export default function SiteHeader() {
   return (
     <header className="site-header no-print">
       <div className="inner">
-        <div className="brand">
+        {/* Clicar no logo/brand leva de volta para o início */}
+        <a href="/" className="brand">
           <span className="logo">⚡</span>
           Vagas CV
-        </div>
+        </a>
         <nav className="site-nav">
           {LINKS.map(l => (
             <a key={l.href} href={l.href} className={`nav-link${l.ativo(pathname) ? ' active' : ''}`}>
