@@ -93,17 +93,47 @@ input, textarea, select {
 .nav-link:hover { color: var(--primary); background: var(--primary-soft); text-decoration: none; }
 .nav-link.active { color: var(--primary); background: var(--primary-soft); }
 
-/* ── Status de autenticação (foto + nome) ───────────── */
-.auth-status { display: flex; align-items: center; gap: 8px; }
+/* ── Menu de autenticação (foto com dropdown: Meu Perfil / Sair) ── */
+.auth-menu { position: relative; display: flex; align-items: center; }
+.auth-avatar-btn {
+  display: grid; place-items: center; padding: 0; border: none; background: transparent;
+  cursor: pointer; border-radius: 50%;
+}
+.auth-avatar-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .auth-avatar {
   width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
-  border: 2px solid var(--primary-soft); flex-shrink: 0;
+  border: 2px solid var(--primary-soft); flex-shrink: 0; display: block;
 }
 .auth-avatar-fallback {
   display: grid; place-items: center; background: linear-gradient(135deg, var(--primary), var(--accent));
   color: #fff; font-size: .85rem; font-weight: 700; border: none;
 }
-.auth-name { font-size: .86rem; font-weight: 600; color: var(--text); white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.auth-dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 200px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg); padding: 6px; z-index: 50;
+}
+.auth-dropdown-head {
+  padding: 8px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+}
+.auth-dropdown-name {
+  display: block; font-size: .86rem; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.auth-dropdown-email {
+  display: block; font-size: .76rem; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.auth-dropdown a,
+.auth-dropdown button {
+  display: flex; align-items: center; width: 100%; padding: 9px 10px; border: none;
+  background: transparent; border-radius: 6px; font-size: .86rem; font-weight: 600;
+  color: var(--text); cursor: pointer; text-align: left; text-decoration: none;
+  transition: all .15s ease;
+}
+.auth-dropdown a:hover { background: var(--primary-soft); color: var(--primary); }
+.auth-dropdown .auth-dropdown-sair { color: var(--danger); }
+.auth-dropdown .auth-dropdown-sair:hover { background: var(--danger-soft); color: var(--danger); }
 
 /* ── Botões ─────────────────────────────────────────── */
 .btn {
