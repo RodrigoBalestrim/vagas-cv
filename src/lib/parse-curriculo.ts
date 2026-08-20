@@ -88,13 +88,17 @@ function limparItem(s: string): string {
 function extrairProjetos(linhas: string[]): UserProfile['projetos'] {
   const out: UserProfile['projetos'] = [];
   let atual: { nome: string; periodo: string; descricao: string } | null = null;
+  // Período de projeto: "Mar/2026 – Atual", "Jan/2025 – Dez/2025", "2025", "Mar/2026"
+  const PERIODO = /\b((?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\s*\/\s*\d{4}|\d{4})\s*(?:–|-|a\s+)\s*(?:atual|(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\s*\/\s*\d{4}|\d{4})/i;
   for (const l of linhas) {
     const item = limparItem(l);
     if (!item) continue;
-    const m = item.match(/^(.+?)\s*[—–|]\s*(.+)$/);
-    if (m) {
+    const pm = item.match(PERIODO);
+    if (pm) {
       if (atual) out.push(atual);
-      atual = { nome: m[1].trim(), periodo: m[2].trim(), descricao: '' };
+      const antes = item.slice(0, pm.index).replace(/[—–|:\s]+$/, '').trim();
+      const depois = item.slice((pm.index || 0) + pm[0].length).replace(/^[—–|:\s]+/, '').trim();
+      atual = { nome: antes || item, periodo: pm[0].trim(), descricao: depois };
     } else if (atual) {
       atual.descricao = atual.descricao ? atual.descricao + ' ' + item : item;
     }
@@ -109,11 +113,17 @@ function extrairExperiencia(linhas: string[]): UserProfile['experiencia'] {
   for (const l of linhas) {
     const item = limparItem(l);
     if (!item) continue;
-    const m = item.match(/^(.+?)\s*(?:[—–|]\s*(.+?))?\s*\((.+?)\)\s*$/);
+    // formato: Cargo — Empresa (Período) — Descrição
+    const m3 = item.match(/^(.+?)\s*[—–|]\s*(.+?)\s*\((.+?)\)\s*(?:[—–]\s*(.+))?$/);
+    // formato: Cargo — Empresa (Período)
+    const m = item.match(/^(.+?)\s*[—–|]\s*(.+?)\s*\((.+?)\)\s*$/);
     const m2 = item.match(/^(.+?)\s*(?:[—–|]\s*(.+?))\s*$/);
-    if (m) {
+    if (m3) {
       if (atual) out.push(atual);
-      atual = { cargo: m[1].trim(), empresa: m[2]?.trim() || '', periodo: m[3].trim(), descricao: '' };
+      atual = { cargo: m3[1].trim(), empresa: m3[2].trim(), periodo: m3[3].trim(), descricao: m3[4]?.trim() || '' };
+    } else if (m) {
+      if (atual) out.push(atual);
+      atual = { cargo: m[1].trim(), empresa: m[2].trim(), periodo: m[3].trim(), descricao: '' };
     } else if (m2) {
       if (atual) out.push(atual);
       atual = { cargo: m2[1].trim(), empresa: m2[2].trim(), periodo: '', descricao: '' };
