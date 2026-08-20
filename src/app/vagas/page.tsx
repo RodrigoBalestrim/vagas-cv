@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Job } from '@/types';
 import JobCard from '@/components/JobCard';
 import ResumeModalContent from '@/components/ResumeModalContent';
+import AuthStatus from '@/components/AuthStatus';
 
 export default function VagasPage() {
   const [vagas, setVagas] = useState<Job[]>([]);
@@ -69,6 +70,7 @@ export default function VagasPage() {
             <a href="/" className="nav-link">Início</a>
             <a href="/vagas" className="nav-link active">Buscar Vagas</a>
             <a href="/curriculo" className="nav-link">Gerar Currículo</a>
+            <AuthStatus />
           </nav>
         </div>
       </header>

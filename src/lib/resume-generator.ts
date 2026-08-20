@@ -1,11 +1,61 @@
 import { Profile, Job } from '@/types';
 import profileData from './profile.json';
+import { UserProfile, PERFIL_RODRIGO } from './user-profile';
 import fs from 'node:fs';
 import path from 'node:path';
 // @ts-expect-error pdfkit não tem tipos TypeScript
 import PDFDocument from 'pdfkit';
 
 const profile: Profile = profileData as Profile;
+
+// Perfil usado na geração. Se o usuário logado tiver perfil próprio (Firestore),
+// ele é passado aqui; senão usa o perfil fixo do Rodrigo (compatibilidade).
+const perfilDe = (perfil?: UserProfile): UserProfile =>
+  perfil && perfil.nome ? perfil : PERFIL_RODRIGO;
+
+// Contato em uma linha (ATS-safe) a partir do perfil
+const linhaContato = (p: UserProfile): string =>
+  [p.cidade, p.email, p.telefone, p.github ? `GitHub: ${p.github}` : '', p.linkedin ? `LinkedIn: ${p.linkedin}` : '', p.portfolio ? `Portfólio: ${p.portfolio}` : '']
+    .filter(Boolean)
+    .join(' · ');
+
+// Converte o perfil do usuário (Firestore) em texto factual para a IA gerar o currículo
+function userProfileToText(p: UserProfile): string {
+  const linhas: string[] = [];
+  linhas.push(`Nome: ${p.nome}`);
+  linhas.push(`Cargo alvo: ${p.cargo}`);
+  if (p.cidade) linhas.push(`Localização: ${p.cidade}`);
+  if (p.email) linhas.push(`E-mail: ${p.email}`);
+  if (p.telefone) linhas.push(`Telefone: ${p.telefone}`);
+  if (p.github) linhas.push(`GitHub: ${p.github}`);
+  if (p.linkedin) linhas.push(`LinkedIn: ${p.linkedin}`);
+  if (p.portfolio) linhas.push(`Portfólio: ${p.portfolio}`);
+  linhas.push('');
+  if (p.objetivo) linhas.push(`Objetivo: ${p.objetivo}`);
+  if (p.resumo) linhas.push(`Resumo: ${p.resumo}`);
+  if (p.skills.length) linhas.push(`Skills: ${p.skills.join(', ')}`);
+  if (p.projetos.length) {
+    linhas.push('Projetos:');
+    p.projetos.forEach(pr => linhas.push(`- ${pr.nome} (${pr.periodo}): ${pr.descricao}`));
+  }
+  if (p.experiencia.length) {
+    linhas.push('Experiência:');
+    p.experiencia.forEach(e => linhas.push(`- ${e.cargo} — ${e.empresa} (${e.periodo}): ${e.descricao}`));
+  }
+  if (p.formacao.length) {
+    linhas.push('Formação:');
+    p.formacao.forEach(f => linhas.push(`- ${f.curso} — ${f.instituicao} (${f.periodo})`));
+  }
+  if (p.certificados.length) {
+    linhas.push('Certificados:');
+    p.certificados.forEach(c => linhas.push(`- ${c}`));
+  }
+  if (p.idiomas.length) {
+    linhas.push('Idiomas:');
+    p.idiomas.forEach(i => linhas.push(`- ${i}`));
+  }
+  return linhas.join('\n');
+}
 
 // 9Router (ou qualquer endpoint OpenAI-compatível) configurável via env
 const AI_BASE_URL = process.env.ANTHROPIC_BASE_URL || process.env.AI_BASE_URL || '';
@@ -159,11 +209,12 @@ function extractJobKeywords(desc: string): string[] {
 }
 
 // FALLBACK: template exato do curriculo_final.html (sem IA disponível)
-function fallbackTemplate(jobMatch?: Job): string {
-  const h = profile.nome;
+function fallbackTemplate(jobMatch?: Job, perfil?: UserProfile): string {
+  const p = perfilDe(perfil);
+  const h = p.nome;
   const role = jobMatch?.titulo
     ? cleanJobTitle(jobMatch.titulo).toUpperCase()
-    : 'DESENVOLVEDOR FRONT-END JÚNIOR';
+    : p.cargo.toUpperCase();
   const keywords = extractJobKeywords(jobMatch?.descricao || '');
   const resumoExtra = keywords.length
     ? ` Alinhado aos requisitos da vaga: ${keywords.slice(0, 6).join(', ')}.`
@@ -171,6 +222,21 @@ function fallbackTemplate(jobMatch?: Job): string {
   const habilidadeFoco = keywords.length
     ? `<p class="skills-full"><strong>Foco da vaga:</strong> ${keywords.map(esc).join(', ')}</p>`
     : '';
+  const skillsHtml = p.skills.map(s => `<p>${esc(s)}</p>`).join('');
+  const projetosHtml = p.projetos.map(pr =>
+    `<div class="xp-row"><span class="xp-title">- ${esc(pr.nome)}</span><span class="xp-date">${esc(pr.periodo)}</span></div><p>${esc(pr.descricao)}</p>`
+  ).join('');
+  const expHtml = p.experiencia.map(e =>
+    `<div class="xp-row"><span class="xp-title">- ${esc(e.cargo)}</span><span class="xp-date">${esc(e.empresa)} (${esc(e.periodo)})</span></div><p>${esc(e.descricao)}</p>`
+  ).join('');
+  const formacaoHtml = p.formacao.map(f =>
+    `<div class="xp-row"><span class="xp-title">- ${esc(f.curso)}</span><span class="xp-date">${esc(f.instituicao)} (${esc(f.periodo)})</span></div>`
+  ).join('');
+  const certHtml = p.certificados.map(c =>
+    `<div class="xp-row"><span class="xp-title">- ${esc(c)}</span><span class="xp-date">Certificado</span></div>`
+  ).join('');
+  const idiomasHtml = p.idiomas.map(i => `<p>- ${esc(i)}</p>`).join('');
+  const objetivo = p.objetivo || `Desenvolvedor ${p.cargo.replace(/desenvolvedor/i, '').trim()} buscando oportunidade remota para construir aplicações web e mobile escaláveis e com boa experiência de usuário.`;
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -196,55 +262,55 @@ function fallbackTemplate(jobMatch?: Job): string {
   <body>
     <h1>${h}</h1>
     <p class="role">${role}</p>
-    <div class="contact"><span><CIDADE, UF> · <EMAIL> · <TELEFONE> · GitHub: https://github.com/<usuario> · LinkedIn: https://www.linkedin.com/in/<usuario> · Portfólio: https://<portfolio>.vercel.app</span></div>
+    <div class="contact"><span>${linhaContato(p)}</span></div>
 
     <section class="sec">
       <h2>Objetivo</h2>
       <div class="items">
-        <p>Desenvolvedor Front-End Júnior em React/Next.js buscando oportunidade remota para construir aplicações web e mobile escaláveis e com boa experiência de usuário.</p>
+        <p>${esc(objetivo)}</p>
       </div>
     </section>
 
     <section class="sec">
       <h2>Resumo</h2>
       <div class="items">
-        <p>Desenvolvedor Front-End com experiência prática em React, TypeScript, Next.js e React Native, do design à publicação. Autor do Prazo Certo, aplicação multiplataforma com Supabase/PostgreSQL, autenticação, permissões por papel e IA generativa (Gemini/OpenAI). Portfólio 3D interativo com React, Three.js e Tailwind CSS, deploy na Vercel. Uso diário de IA generativa e engenharia de prompts. Busco oportunidade remota como Desenvolvedor Front-End Júnior React.${resumoExtra}</p>
+        <p>${esc(p.resumo)}${resumoExtra}</p>
       </div>
     </section>
     <section class="sec">
       <h2>Skills</h2>
       <div class="items">
-        ${habilidadeFoco}<div class="skills-grid"><p>React</p><p>TypeScript</p><p>Next.js</p><p>JavaScript (ES6+)</p><p>React Native, Expo</p><p>HTML5, CSS3</p><p>Tailwind CSS, Bootstrap</p><p>Three.js, React Three Fiber, Framer Motion</p><p>APIs REST</p><p>Supabase (PostgreSQL, Auth)</p><p>Git, GitHub, Vercel</p><p>Figma</p><p>Testes</p><p>Responsive Design</p><p>Web Development</p><p>Front-end</p><p>Docker</p><p>Cloud (Vercel, AWS)</p><p>Metodologias Ágeis</p><p>Engenharia de prompts (Gemini/OpenAI)</p></div>
+        ${habilidadeFoco}<div class="skills-grid">${skillsHtml}</div>
       </div>
     </section>
     <section class="sec">
       <h2>Projetos</h2>
       <div class="items">
-        <div class="xp-row"><span class="xp-title">- Prazo Certo</span><span class="xp-date">Jan/2025 – Atual</span></div><p>Aplicativo multiplataforma (Android/Web) de gestão de validade de produtos com React Native, TypeScript, Expo e Supabase/PostgreSQL. Autenticação com 5 papéis de permissão (owner, admin, manager, stockist, viewer), leitor de código de barras EAN-13, notificações push, relatórios em PDF e suporte offline (AsyncStorage). Build de APK automatizado a cada atualização via GitHub Actions (CI/CD). Integração com IA generativa para reconhecimento de produto por imagem. Repositório: https://github.com/<usuario>/prazo-certo-app</p><div class="xp-row"><span class="xp-title">- Prazo Certo Landing</span><span class="xp-date">Jan/2025</span></div><p>Landing page do Prazo Certo com Next.js e TypeScript. https://github.com/<usuario>/prazo-certo-landing</p><div class="xp-row"><span class="xp-title">- Portfólio 3D Interativo</span><span class="xp-date">Jan/2025</span></div><p>Portfólio com Next.js, React, Three.js, React Three Fiber e Tailwind CSS, animações com Framer Motion, 100% responsivo, deploy na Vercel. https://<portfolio>.vercel.app</p><div class="xp-row"><span class="xp-title">- Currículo HTML Bilíngue</span><span class="xp-date">Jan/2025</span></div><p>Currículo + portfólio responsivo com HTML, CSS e JavaScript. https://github.com/<usuario>/curriculo-html-rodrigo</p>
+        ${projetosHtml}
       </div>
     </section>
     <section class="sec">
       <h2>Experiência</h2>
       <div class="items">
-        <div class="xp-row"><span class="xp-title">- Desenvolvedor Full Stack</span><span class="xp-date">Autônomo (Jan/2025 – Atual)</span></div><p>Desenvolvimento autônomo de sites e aplicativos de ponta a ponta (front-end e back-end). Autor do Prazo Certo (React Native, TypeScript, Expo, Supabase/PostgreSQL, IA generativa, CI/CD), além de portfólio 3D, landing pages e currículo HTML bilíngue com deploy na Vercel.</p><div class="xp-row"><span class="xp-title">- Técnico de Informática</span><span class="xp-date">Autônomo (Jan/2014 – Dez/2024)</span></div><p>Mais de 10 anos de experiência em atendimento ao cliente, diagnóstico e resolução de problemas técnicos, gestão do próprio negócio, suporte e organização.</p>
+        ${expHtml}
       </div>
     </section>
     <section class="sec">
       <h2>Formação</h2>
       <div class="items">
-        <div class="xp-row"><span class="xp-title">- Análise de Dados e Desenvolvimento</span><span class="xp-date">UniCesumar (Jan/2022 – Dez/2024)</span></div><div class="xp-row"><span class="xp-title">- Análise e Projeto de Software</span><span class="xp-date">IFRS / Aprenda Mais (Ago/2026)</span></div><div class="xp-row"><span class="xp-title">- Desenvolvimento Full Stack</span><span class="xp-date">Programador BR (Jun/2021)</span></div><div class="xp-row"><span class="xp-title">- HTML/CSS</span><span class="xp-date">Curso em Vídeo (Jun/2020)</span></div>
+        ${formacaoHtml}
       </div>
     </section>
 <section class="sec">
       <h2>Certificados</h2>
       <div class="items">
-        <div class="xp-row"><span class="xp-title">- Programação em Pares de IA com o GitHub Copilot</span><span class="xp-date">Certificado</span></div><div class="xp-row"><span class="xp-title">- Prompt Engineering: Aprenda a Conversar com uma IA Generativa</span><span class="xp-date">Certificado</span></div>
+        ${certHtml}
       </div>
     </section>
     <section class="sec">
       <h2>Idiomas</h2>
       <div class="items">
-        <p>- Português — nativo</p><p>- Inglês — técnico (leitura de documentação)</p><p>- Espanhol — básico</p>
+        ${idiomasHtml}
       </div>
     </section>
   </body>
@@ -293,8 +359,10 @@ Responda SEMPRE no formato:
 ===CARTA===
 [descrição/carta de candidatura pronta pra colar, curta, com as keywords]`;
 
-async function callAI(title: string, description: string): Promise<{ curriculo: string; carta: string }> {
-  const profileTxt = readPerfilMestre();
+async function callAI(title: string, description: string, perfil?: UserProfile): Promise<{ curriculo: string; carta: string }> {
+  const profileTxt = perfil
+    ? userProfileToText(perfil)
+    : readPerfilMestre();
 
   const user = `Título da vaga:\n${title}\n\nDescrição da vaga:\n${description}\n\nPERFIL DO CANDIDATO (verdade factual, não inventar):\n${profileTxt}`;
 
@@ -386,7 +454,7 @@ function stripFences(s: string): string {
 
 function markdownToHtml(cur: string, roleFallback: string): string {
   const lines = stripFences(cur).split('\n').map(l => l.trim());
-  let name = '<NOME COMPLETO>';
+  let name = '';
   let contact = '';
   let sections: { title: string; items: string[] }[] = [];
   let curSec: { title: string; items: string[] } | null = null;
@@ -398,7 +466,7 @@ function markdownToHtml(cur: string, roleFallback: string): string {
     // nome = primeiro # (nível 1)
     if (line.startsWith('# ')) {
       const text = cleanMd(line.slice(2));
-      if (!name || name === '<NOME COMPLETO>') name = text;
+      if (!name) name = text;
       continue;
     }
     // ## ou ### vira título de seção
@@ -523,45 +591,46 @@ function ensureCertificates(html: string): string {
   return out;
 }
 
-export async function gerarCurriculoHTML(jobMatch?: Job): Promise<string> {
-  const title = jobMatch?.titulo || 'Desenvolvedor Front-End';
+export async function gerarCurriculoHTML(jobMatch?: Job, perfil?: UserProfile): Promise<string> {
+  const title = jobMatch?.titulo || perfilDe(perfil).cargo || 'Desenvolvedor Front-End';
   const description = jobMatch?.descricao || '';
 
   // Se AI configurada, usa IA pra adaptar o currículo à vaga
   if (AI_BASE_URL && AI_AUTH_TOKEN) {
     try {
-      const { curriculo } = await callAI(title, description);
+      const { curriculo } = await callAI(title, description, perfil);
       const html = markdownToHtml(curriculo, title);
       // valida: se a IA retornou placeholder/lixo (sem seções), cai pro fallback
       const sections = (html.match(/<h2>/g) || []).length;
       const hasContent = html.includes('<h2>') && html.length > 2000;
       if (!hasContent || sections < 2 || /markdown and|resume in markdown|\[markdown\]/i.test(curriculo)) {
         console.warn('IA retornou conteúdo insuficiente, usando fallback');
-        return fallbackTemplate(jobMatch);
+        return fallbackTemplate(jobMatch, perfil);
       }
       // garante certificados mesmo se a IA omitir
       return ensureCertificates(html);
     } catch (e) {
       console.error('IA falhou, usando fallback:', e);
-      return fallbackTemplate(jobMatch);
+      return fallbackTemplate(jobMatch, perfil);
     }
   }
 
-  return fallbackTemplate(jobMatch);
+  return fallbackTemplate(jobMatch, perfil);
 }
 
 // Gera um PDF A4 real com pdfkit a partir do perfil (mesmo conteúdo do fallbackTemplate)
 // Ajusta automaticamente o tamanho da fonte/espaçamento para preencher bem a página:
 // - conteúdo curto -> fonte e espaçamento maiores
 // - conteúdo longo  -> reduz para caber em 1 página
-export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
+export function gerarCurriculoPDF(jobMatch?: Job, perfil?: UserProfile): Promise<Buffer> {
+  const p = perfilDe(perfil);
   const A4_HEIGHT = 842;
   const MARGIN = 36;
   const usable = A4_HEIGHT - MARGIN * 2;
 
   const draw = (scale: number) => new Promise<{ buffer: Buffer; pages: number; used: number }>((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margin: MARGIN, info: { Title: 'Currículo - <NOME COMPLETO>' } });
+      const doc = new PDFDocument({ size: 'A4', margin: MARGIN, info: { Title: `Currículo - ${p.nome}` } });
       const chunks: Buffer[] = [];
       doc.on('data', (c: Buffer) => chunks.push(c));
       doc.on('end', () => {
@@ -570,10 +639,10 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       });
       doc.on('error', reject);
 
-      const h = profile.nome;
+      const h = p.nome;
       const role = jobMatch?.titulo
         ? cleanJobTitle(jobMatch.titulo).toUpperCase()
-        : 'DESENVOLVEDOR FRONT-END JÚNIOR';
+        : p.cargo.toUpperCase();
       const keywords = extractJobKeywords(jobMatch?.descricao || '');
 
       const fs = (n: number) => n * scale;      // fonte
@@ -585,9 +654,7 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
       doc.moveDown(sp(0.1));
       doc.font('Helvetica-Bold').fontSize(fs(10)).fillColor('#111111').text(role);
       doc.moveDown(sp(0.1));
-      doc.font('Helvetica').fontSize(fs(7.5)).fillColor('#333333').text(
-        '<CIDADE, UF> · <EMAIL> · <TELEFONE> · GitHub: https://github.com/<usuario> · LinkedIn: https://www.linkedin.com/in/<usuario> · Portfólio: https://<portfolio>.vercel.app'
-      );
+      doc.font('Helvetica').fontSize(fs(7.5)).fillColor('#333333').text(linhaContato(p));
 
       const section = (titulo: string) => {
         doc.moveDown(sp(0.3));
@@ -604,72 +671,44 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
 
       section('Objetivo');
       doc.text(
-        'Desenvolvedor Front-End Júnior em React/Next.js buscando oportunidade remota para construir aplicações web e mobile escaláveis e com boa experiência de usuário.',
+        p.objetivo || `Desenvolvedor ${p.cargo.replace(/desenvolvedor/i, '').trim()} buscando oportunidade remota para construir aplicações web e mobile escaláveis e com boa experiência de usuário.`,
         { lineGap: gap }
       );
 
       section('Resumo');
       doc.text(
-        'Desenvolvedor Front-End com experiência prática em React, TypeScript, Next.js e React Native, do design à publicação. Autor do Prazo Certo, aplicação multiplataforma com Supabase/PostgreSQL, autenticação, permissões por papel e IA generativa (Gemini/OpenAI). Portfólio 3D interativo com React, Three.js e Tailwind CSS, deploy na Vercel. Uso diário de IA generativa e engenharia de prompts. Busco oportunidade remota como Desenvolvedor Front-End Júnior React.' +
+        (p.resumo || '') +
         (keywords.length ? ` Alinhado aos requisitos da vaga: ${keywords.slice(0, 6).join(', ')}.` : ''),
         { lineGap: gap }
       );
 
       section('Skills');
       if (keywords.length) bullet('Foco da vaga: ' + keywords.join(', '));
-      const skillsList = [
-        'React', 'TypeScript', 'Next.js', 'JavaScript (ES6+)', 'React Native, Expo',
-        'HTML5, CSS3', 'Tailwind CSS, Bootstrap', 'Three.js, React Three Fiber, Framer Motion',
-        'APIs REST', 'Supabase (PostgreSQL, Auth)', 'Git, GitHub, Vercel', 'Figma',
-        'Testes', 'Responsive Design', 'Web Development', 'Front-end',
-        'Docker', 'Cloud (Vercel, AWS)', 'Metodologias Ágeis',
-        'Engenharia de prompts (Gemini/OpenAI)',
-      ];
       // coluna única: 1 skill por linha, ordem de leitura linear (ATS-safe)
-      skillsList.forEach(s => bullet(s));
+      p.skills.forEach(s => bullet(s));
 
       section('Projetos');
-      doc.text('Prazo Certo', { continued: true });
-      doc.text('  Jan/2025 – Atual', { align: 'right' });
-      bullet('Aplicativo multiplataforma (Android/Web) de gestão de validade de produtos com React Native, TypeScript, Expo e Supabase/PostgreSQL. Autenticação com 5 papéis de permissão (owner, admin, manager, stockist, viewer), leitor de código de barras EAN-13, notificações push, relatórios em PDF e suporte offline (AsyncStorage). Build de APK automatizado a cada atualização via GitHub Actions (CI/CD). Integração com IA generativa para reconhecimento de produto por imagem. Repositório: https://github.com/<usuario>/prazo-certo-app');
-      doc.text('Prazo Certo Landing', { continued: true });
-      doc.text('  Jan/2025', { align: 'right' });
-      bullet('Landing page do Prazo Certo com Next.js e TypeScript. https://github.com/<usuario>/prazo-certo-landing');
-      doc.text('Portfólio 3D Interativo', { continued: true });
-      doc.text('  Jan/2025', { align: 'right' });
-      bullet('Portfólio com Next.js, React, Three.js, React Three Fiber e Tailwind CSS, animações com Framer Motion, 100% responsivo, deploy na Vercel. https://<portfolio>.vercel.app');
-      doc.text('Currículo HTML Bilíngue', { continued: true });
-      doc.text('  Jan/2025', { align: 'right' });
-      bullet('Currículo + portfólio responsivo com HTML, CSS e JavaScript. https://github.com/<usuario>/curriculo-html-rodrigo');
+      p.projetos.forEach(pr => {
+        doc.text(pr.nome, { continued: true });
+        doc.text('  ' + pr.periodo, { align: 'right' });
+        bullet(pr.descricao);
+      });
 
       section('Experiência');
-      doc.text('Desenvolvedor Full Stack', { continued: true });
-      doc.text('  Autônomo (Jan/2025 – Atual)', { align: 'right' });
-      bullet('Desenvolvimento autônomo de sites e aplicativos de ponta a ponta (front-end e back-end). Autor do Prazo Certo (React Native, TypeScript, Expo, Supabase/PostgreSQL, IA generativa, CI/CD), além de portfólio 3D, landing pages e currículo HTML bilíngue com deploy na Vercel.');
-      doc.text('Técnico de Informática', { continued: true });
-      doc.text('  Autônomo (Jan/2014 – Dez/2024)', { align: 'right' });
-      bullet('Mais de 10 anos de experiência em atendimento ao cliente, diagnóstico e resolução de problemas técnicos, gestão do próprio negócio, suporte e organização.');
+      p.experiencia.forEach(e => {
+        doc.text(e.cargo, { continued: true });
+        doc.text(`  ${e.empresa} (${e.periodo})`, { align: 'right' });
+        bullet(e.descricao);
+      });
 
       section('Formação');
-      [
-        'Análise de Dados e Desenvolvimento — UniCesumar (Jan/2022 – Dez/2024)',
-        'Análise e Projeto de Software — IFRS / Aprenda Mais (Ago/2026)',
-        'Desenvolvimento Full Stack — Programador BR (Jun/2021)',
-        'HTML/CSS — Curso em Vídeo (Jun/2020)',
-      ].forEach(bullet);
+      p.formacao.map(f => `${f.curso} — ${f.instituicao} (${f.periodo})`).forEach(bullet);
 
       section('Certificados');
-      [
-        'Programação em Pares de IA com o GitHub Copilot — Certificado',
-        'Prompt Engineering: Aprenda a Conversar com uma IA Generativa — Certificado',
-      ].forEach(bullet);
+      p.certificados.map(c => `${c} — Certificado`).forEach(bullet);
 
       section('Idiomas');
-      [
-        'Português — nativo',
-        'Inglês — técnico (leitura de documentação)',
-        'Espanhol — básico',
-      ].forEach(bullet);
+      p.idiomas.forEach(bullet);
 
       doc.end();
     } catch (e) {

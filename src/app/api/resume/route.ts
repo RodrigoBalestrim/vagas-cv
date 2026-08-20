@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { gerarCurriculoHTML, gerarCurriculoPDF, calcularCompatibilidade } from '@/lib/resume-generator';
+import { UserProfile } from '@/lib/user-profile';
 import { Job } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { jobId, jobUrl, jobDescription, jobTitle, companyName, location, format = 'html' } = body;
+    const { jobId, jobUrl, jobDescription, jobTitle, companyName, location, format = 'html', perfil } = body;
 
     let vaga: Job | undefined;
 
@@ -28,14 +29,15 @@ export async function POST(request: NextRequest) {
       vaga = (vagas.vagas || []).find((v: Job) => v.id === jobId || v.url === jobUrl);
     }
 
-    const html = await gerarCurriculoHTML(vaga);
+    const perfilUsr = sanitizePerfil(perfil);
+    const html = await gerarCurriculoHTML(vaga, perfilUsr);
 
     if (format === 'match') {
       return NextResponse.json(calcularCompatibilidade(body.jobDescription || vaga?.descricao));
     }
 
     if (format === 'pdf') {
-      const pdf = await gerarCurriculoPDF(vaga);
+      const pdf = await gerarCurriculoPDF(vaga, perfilUsr);
       return new NextResponse(new Uint8Array(pdf), {
         headers: {
           'Content-Type': 'application/pdf',
@@ -61,6 +63,38 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Garante que só campos conhecidos do perfil sejam aceitos (evita campos arbitrários no PDF)
+function sanitizePerfil(raw: any): UserProfile | undefined {
+  if (!raw || typeof raw !== 'object' || !raw.nome) return undefined;
+  const str = (v: any) => (typeof v === 'string' ? v.slice(0, 5000) : '');
+  const strArr = (v: any) => (Array.isArray(v) ? v.filter(x => typeof x === 'string').map(x => x.slice(0, 2000)).slice(0, 100) : []);
+  const objArr = (v: any) =>
+    Array.isArray(v)
+      ? v.filter(x => x && typeof x === 'object').map(x => ({
+          nome: str(x.nome), periodo: str(x.periodo), descricao: str(x.descricao),
+          cargo: str(x.cargo), empresa: str(x.empresa), curso: str(x.curso), instituicao: str(x.instituicao),
+        })).slice(0, 50)
+      : [];
+  return {
+    nome: str(raw.nome),
+    cargo: str(raw.cargo),
+    cidade: str(raw.cidade),
+    email: str(raw.email),
+    telefone: str(raw.telefone),
+    github: str(raw.github),
+    linkedin: str(raw.linkedin),
+    portfolio: str(raw.portfolio),
+    objetivo: str(raw.objetivo),
+    resumo: str(raw.resumo),
+    skills: strArr(raw.skills),
+    projetos: objArr(raw.projetos),
+    experiencia: objArr(raw.experiencia),
+    formacao: objArr(raw.formacao),
+    certificados: strArr(raw.certificados),
+    idiomas: strArr(raw.idiomas),
+  };
 }
 
 export async function GET() {

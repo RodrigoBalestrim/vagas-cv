@@ -1,6 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
+import { carregarPerfil } from '@/lib/perfil-store';
+import { UserProfile } from '@/lib/user-profile';
 
 interface Compatibilidade {
   score: number;
@@ -10,6 +14,9 @@ interface Compatibilidade {
 }
 
 export default function CurriculoPage() {
+  const { user, loading: authLoading, logout } = useAuth();
+  const router = useRouter();
+  const [perfil, setPerfil] = useState<UserProfile | null>(null);
   const [html, setHtml] = useState<string>('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [preview, setPreview] = useState<'html' | 'pdf'>('html');
@@ -20,9 +27,25 @@ export default function CurriculoPage() {
   const [compat, setCompat] = useState<Compatibilidade | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    (async () => {
+      const p = await carregarPerfil(user.uid);
+      setPerfil(p.nome ? p : null);
+    })();
+  }, [user, authLoading, router]);
+
+  const nomeExibido = perfil?.nome || (user?.email?.split('@')[0] || 'você');
+  const semPerfil = !!user && !perfil;
+
   const payload = () => ({
     jobTitle: titulo.trim() || undefined,
     jobDescription: descricao.trim() || undefined,
+    perfil: perfil || undefined,
   });
 
   const nomeArquivo = (ext: string) => {
@@ -107,6 +130,16 @@ export default function CurriculoPage() {
             <a href="/" className="nav-link">Início</a>
             <a href="/vagas" className="nav-link">Buscar Vagas</a>
             <a href="/curriculo" className="nav-link active">Gerar Currículo</a>
+            <a href="/perfil" className="nav-link">Meu Perfil</a>
+            {user && (
+              <button
+                onClick={async () => { await logout(); router.push('/'); }}
+                className="btn btn-sm btn-ghost"
+                style={{ marginLeft: '4px' }}
+              >
+                Sair
+              </button>
+            )}
           </nav>
         </div>
       </header>
@@ -115,7 +148,7 @@ export default function CurriculoPage() {
         <header style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ marginBottom: '4px' }}>Currículo ATS-Friendly</h1>
-            <p className="muted" style={{ margin: 0 }}>Baseado no perfil do <NOME COMPLETO></p>
+            <p className="muted" style={{ margin: 0 }}>Baseado no perfil de {nomeExibido}</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {html && (
@@ -152,6 +185,13 @@ export default function CurriculoPage() {
             </div>
           </div>
         </div>
+
+        {semPerfil && (
+          <div className="alert alert-warn" style={{ marginBottom: '16px' }}>
+            ⚠️ Você ainda não preencheu seu perfil. O currículo será gerado com o perfil de exemplo até você
+            configurar seus dados em <a href="/perfil" style={{ fontWeight: 700 }}>Meu Perfil</a>.
+          </div>
+        )}
 
         {erro && (
           <div className="alert alert-error" style={{ marginBottom: '16px' }}>
@@ -278,7 +318,7 @@ export default function CurriculoPage() {
       </div>
 
       <footer className="site-footer no-print">
-        Baseado no perfil de <NOME COMPLETO> · Front-end &amp; Mobile (React, React Native, TypeScript)
+        Baseado no perfil de {nomeExibido} · Currículo ATS multi-usuário
       </footer>
     </div>
   );

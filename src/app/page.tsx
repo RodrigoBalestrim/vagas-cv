@@ -1,4 +1,5 @@
 import FeatureCard from '@/components/FeatureCard';
+import AuthStatus from '@/components/AuthStatus';
 
 export default function HomePage() {
   return (
@@ -12,6 +13,7 @@ export default function HomePage() {
           <nav className="site-nav">
             <a href="/vagas" className="nav-link">Buscar Vagas</a>
             <a href="/curriculo" className="nav-link">Gerar Currículo</a>
+            <AuthStatus />
           </nav>
         </div>
       </header>
@@ -68,7 +70,7 @@ export default function HomePage() {
       </main>
 
       <footer className="site-footer">
-        Baseado no perfil de <NOME COMPLETO> · Front-end &amp; Mobile (React, React Native, TypeScript)
+        Vagas CV · Buscador de vagas + Currículo ATS multi-usuário
       </footer>
     </div>
   );
