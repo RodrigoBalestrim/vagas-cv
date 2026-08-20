@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { carregarPerfil, salvarPerfil } from '@/lib/perfil-store';
 import { UserProfile, PROFILE_VAZIO } from '@/lib/user-profile';
-import { extrairTextoDoPDF, parseCurriculo } from '@/lib/parse-curriculo';
+import { extrairTextoDeArquivo, parseCurriculo } from '@/lib/parse-curriculo';
 
 export default function PerfilPage() {
   const { user, loading } = useAuth();
@@ -18,17 +18,17 @@ export default function PerfilPage() {
   const [erroImport, setErroImport] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const importarPDF = async (file: File) => {
+  const importarArquivo = async (file: File) => {
     setImportando(true);
     setErroImport('');
     try {
-      const texto = await extrairTextoDoPDF(file);
-      if (!texto.trim()) throw new Error('PDF vazio ou sem texto (escaneado?)');
+      const texto = await extrairTextoDeArquivo(file);
+      if (!texto.trim()) throw new Error('Arquivo vazio ou sem texto (PDF escaneado/imagem?).');
       const p = parseCurriculo(texto);
       setPerfil(prev => ({ ...prev, ...p }));
       setSalvo(false);
     } catch (e: any) {
-      setErroImport(e?.message || 'Falha ao ler o PDF.');
+      setErroImport(e?.message || 'Falha ao ler o arquivo.');
     } finally {
       setImportando(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -106,20 +106,20 @@ export default function PerfilPage() {
 
         <div className="card" style={{ padding: '24px', marginBottom: '24px', borderColor: 'var(--primary)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
-            <h2 style={{ fontSize: '16px', margin: 0 }}>📄 Importar do currículo (PDF)</h2>
+            <h2 style={{ fontSize: '16px', margin: 0 }}>📄 Importar do currículo (PDF, Word ou TXT)</h2>
             <input
               ref={fileRef}
               type="file"
-              accept="application/pdf"
+              accept=".pdf,.docx,.doc,.txt,.md,application/pdf,application/msword,text/plain,text/markdown"
               style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) importarPDF(f); }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) importarArquivo(f); }}
             />
           </div>
           <p className="muted" style={{ margin: '0 0 16px', fontSize: '13px' }}>
-            Envie seu currículo em PDF e os campos abaixo serão preenchidos automaticamente (nome, contato, skills, projetos, experiência, formação...). Depois revise e salve.
+            Envie seu currículo em <strong>PDF, Word (.docx) ou TXT</strong> e os campos abaixo serão preenchidos automaticamente (nome, contato, skills, projetos, experiência, formação...). Depois revise e salve.
           </p>
           <button onClick={() => fileRef.current?.click()} disabled={importando} className="btn btn-primary">
-            {importando ? '⏳ Lendo PDF...' : '📤 Escolher PDF do currículo'}
+            {importando ? '⏳ Lendo arquivo...' : '📤 Escolher currículo (PDF/Word/TXT)'}
           </button>
           {erroImport && (
             <p style={{ color: 'var(--danger)', fontSize: '13px', margin: '10px 0 0' }}>⚠️ {erroImport} (tente um PDF com texto, não escaneado/imagem).</p>

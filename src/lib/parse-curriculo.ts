@@ -226,3 +226,22 @@ export async function extrairTextoDoPDF(file: File): Promise<string> {
   }
   return texto;
 }
+
+async function extrairTextoDoDOCX(file: File): Promise<string> {
+  // mammoth roda no browser e extrai texto de arquivos .docx (Word).
+  const mammoth = await import('mammoth/mammoth.browser');
+  const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+  return result.value;
+}
+
+// Detecta o tipo pelo nome/extension do arquivo e extrai o texto bruto.
+// Suporta: .pdf (pdfjs), .docx (mammoth), .txt/.md (leitura direta).
+export async function extrairTextoDeArquivo(file: File): Promise<string> {
+  const nome = (file.name || '').toLowerCase();
+  const ehDOCX = nome.endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const ehPDF = nome.endsWith('.pdf') || file.type === 'application/pdf';
+  if (ehDOCX) return extrairTextoDoDOCX(file);
+  if (ehPDF) return extrairTextoDoPDF(file);
+  // fallback: tenta ler como texto puro (.txt, .md, etc.)
+  return file.text();
+}
