@@ -29,6 +29,7 @@ const SKILLS_PERFIL = [
   'APIs REST', 'Git', 'GitHub', 'Vercel', 'VS Code', 'Figma', 'Node.js',
   'GitHub Actions', 'CI/CD', 'Edge Functions', 'AsyncStorage',
   'Engenharia de Prompts', 'Gemini', 'OpenAI', 'Auth', 'Design Responsivo',
+  'Docker', 'Cloud', 'AWS', 'Metodologias Ágeis',
 ];
 
 // Termos gerais de vaga de dev que reforçam ATS quando presentes na descrição
@@ -61,6 +62,7 @@ const COBERTURA_PERFIL = [
   'Engenharia de Prompts', 'Gemini', 'OpenAI', 'Auth', 'Design Responsivo', 'Responsive Design',
   'Testes', 'Jest', 'componentes reutilizáveis', 'code review', 'estado', 'props',
   'consumo de APIs', 'Web Development', 'Front-end', 'Frontend',
+  'Cloud', 'Docker', 'AWS', 'Azure', 'scrum', 'ágil', 'comunicacao',
 ];
 
 // Calcula o % de compatibilidade entre a vaga e o perfil do candidato.
@@ -179,7 +181,7 @@ function fallbackTemplate(jobMatch?: Job): string {
     <section class="sec">
       <h2>Skills</h2>
       <div class="items">
-        ${habilidadeFoco}<div class="skills-grid"><p>React</p><p>TypeScript</p><p>Next.js</p><p>JavaScript (ES6+)</p><p>React Native, Expo</p><p>HTML5, CSS3</p><p>Tailwind CSS, Bootstrap</p><p>Three.js, React Three Fiber, Framer Motion</p><p>APIs REST</p><p>Supabase (PostgreSQL, Auth)</p><p>Git, GitHub, Vercel</p><p>Figma</p><p>Testes</p><p>Responsive Design</p><p>Web Development</p><p>Front-end</p><p>Engenharia de prompts (Gemini/OpenAI)</p></div>
+        ${habilidadeFoco}<div class="skills-grid"><p>React</p><p>TypeScript</p><p>Next.js</p><p>JavaScript (ES6+)</p><p>React Native, Expo</p><p>HTML5, CSS3</p><p>Tailwind CSS, Bootstrap</p><p>Three.js, React Three Fiber, Framer Motion</p><p>APIs REST</p><p>Supabase (PostgreSQL, Auth)</p><p>Git, GitHub, Vercel</p><p>Figma</p><p>Testes</p><p>Responsive Design</p><p>Web Development</p><p>Front-end</p><p>Docker</p><p>Cloud (Vercel, AWS)</p><p>Metodologias Ágeis</p><p>Engenharia de prompts (Gemini/OpenAI)</p></div>
       </div>
     </section>
     <section class="sec">
@@ -587,6 +589,7 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
         'HTML5, CSS3', 'Tailwind CSS, Bootstrap', 'Three.js, React Three Fiber, Framer Motion',
         'APIs REST', 'Supabase (PostgreSQL, Auth)', 'Git, GitHub, Vercel', 'Figma',
         'Testes', 'Responsive Design', 'Web Development', 'Front-end',
+        'Docker', 'Cloud (Vercel, AWS)', 'Metodologias Ágeis',
         'Engenharia de prompts (Gemini/OpenAI)',
       ];
       // coluna única: 1 skill por linha, ordem de leitura linear (ATS-safe)
