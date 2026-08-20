@@ -647,36 +647,51 @@ export function gerarCurriculoPDF(jobMatch?: Job): Promise<Buffer> {
 
   return (async () => {
     let scale = 1;
-    let result = await draw(scale);
+    let best = await draw(scale);
 
-    // Ajuste iterativo (máx. 8 tentativas)
-    for (let i = 0; i < 8; i++) {
-      const fill = result.used / usable;
+    // Ajuste iterativo (máx. 10 tentativas)
+    for (let i = 0; i < 10; i++) {
+      const fill = best.used / usable; // preenchimento da última folha (0-1)
 
-      if (result.pages > 1) {
-        // conteúdo estourou a página: reduz escala proporcionalmente
-        scale = Math.max(0.55, scale * (usable / Math.max(result.used, 1)) * 0.97);
-        result = await draw(scale);
+      if (best.pages === 1) {
+        // 1 folha: preencher bem SEM derramar para a 2ª
+        if (fill < 0.90) {
+          const lastOne = best;
+          scale = Math.min(1.45, scale * (0.97 / Math.max(fill, 0.1)));
+          const r = await draw(scale);
+          if (r.pages === 1) { best = r; continue; }
+          // estourou para 2ª folha: mantém a maior escala que ainda era 1 folha
+          best = lastOne;
+          break;
+        }
+        if (fill > 0.995) {
+          scale = Math.max(0.55, scale * 0.95);
+          best = await draw(scale);
+          continue;
+        }
+        break;
+      }
+
+      // 2+ folhas: preencher bem a última folha (sem cortar conteúdo)
+      const lastPageUsed = best.used - (best.pages - 1) * usable;
+      const lastFill = lastPageUsed / usable;
+
+      if (lastFill < 0.80) {
+        // última folha quase vazia: aumenta fonte/espaçamento para preenchê-la
+        scale = Math.min(1.55, scale * (0.95 / Math.max(lastFill, 0.1)));
+        best = await draw(scale);
+        continue;
+      }
+      if (lastFill > 0.995) {
+        // muito justo: reduz um pouco para não cortar conteúdo
+        scale = Math.max(0.5, scale * 0.96);
+        best = await draw(scale);
         continue;
       }
 
-      if (fill < 0.90) {
-        // conteúdo curto: aumenta fonte/espaçamento para preencher melhor
-        scale = Math.min(1.45, scale * (0.97 / Math.max(fill, 0.1)));
-        result = await draw(scale);
-        continue;
-      }
-
-      if (fill > 0.995) {
-        // muito justo: reduz um pouco para não cortar
-        scale = Math.max(0.55, scale * 0.95);
-        result = await draw(scale);
-        continue;
-      }
-
-      break; // preenchimento ideal (90%-99.5% da página)
+      break; // última folha bem preenchida
     }
 
-    return result.buffer;
+    return best.buffer;
   })();
 }

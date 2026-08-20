@@ -10,6 +10,8 @@ interface Compatibilidade {
 
 export default function CurriculoPage() {
   const [html, setHtml] = useState<string>('');
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [preview, setPreview] = useState<'html' | 'pdf'>('html');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
   const [titulo, setTitulo] = useState('');
@@ -29,6 +31,20 @@ export default function CurriculoPage() {
       .replace(/^-+|-+$/g, '')
       .toLowerCase();
     return `${base}.${ext}`;
+  };
+
+  const buscarPDF = async () => {
+    const res = await fetch('/api/resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload(), format: 'pdf' }),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    const blob = await res.blob();
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    const url = URL.createObjectURL(blob);
+    setPdfUrl(url);
+    return url;
   };
 
   const gerar = async () => {
@@ -53,6 +69,7 @@ export default function CurriculoPage() {
       if (matchRes.ok) {
         setCompat(await matchRes.json());
       }
+      setPdfUrl(null);
     } catch {
       setErro(true);
     } finally {
@@ -63,25 +80,13 @@ export default function CurriculoPage() {
   const baixarPDF = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/resume', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobTitle: titulo.trim() || undefined,
-          jobDescription: descricao.trim() || undefined,
-          format: 'pdf',
-        }),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const url = pdfUrl || (await buscarPDF());
       const a = document.createElement('a');
       a.href = url;
       a.download = nomeArquivo('pdf');
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
     } catch {
       setErro(true);
     } finally {
@@ -215,12 +220,39 @@ export default function CurriculoPage() {
 
         {html && (
           <div className="card no-print" style={{ overflow: 'hidden' }}>
-            <iframe
-              ref={iframeRef}
-              srcDoc={html}
-              style={{ width: '100%', height: '90vh', border: 'none', minHeight: '800px' }}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-print"
-            />
+            <div style={{ display: 'flex', gap: '8px', padding: '10px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+              <button
+                onClick={() => setPreview('html')}
+                className={`btn btn-sm ${preview === 'html' ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                👁️ HTML
+              </button>
+              <button
+                onClick={() => { if (!pdfUrl) buscarPDF(); setPreview('pdf'); }}
+                className={`btn btn-sm ${preview === 'pdf' ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                📄 Pré-visualizar PDF
+              </button>
+            </div>
+            {preview === 'html' ? (
+              <iframe
+                ref={iframeRef}
+                srcDoc={html}
+                style={{ width: '100%', height: '90vh', border: 'none', minHeight: '800px' }}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-print"
+              />
+            ) : (
+              pdfUrl ? (
+                <iframe
+                  src={pdfUrl}
+                  style={{ width: '100%', height: '90vh', border: 'none', minHeight: '800px' }}
+                />
+              ) : (
+                <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Gerando pré-visualização do PDF...
+                </div>
+              )
+            )}
           </div>
         )}
 
