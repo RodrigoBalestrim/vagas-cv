@@ -65,18 +65,33 @@ const COBERTURA_PERFIL = [
   'Cloud', 'Docker', 'AWS', 'Azure', 'scrum', 'ágil', 'comunicacao',
 ];
 
+// Tecnologias que o perfil NÃO cobre e que, se exigidas pela vaga, bloqueiam/derrubam o match.
+// Reflete a lista "evitar" do profile.json: Java/Spring, .NET, PHP, Go, Python, Ruby + ERPs/legados.
+const KEYWORDS_BLOQUEADAS = [
+  'advpl', 'protheus', 'totvs', 'pl/sql', 'plsql', 'oracle', 'java', 'spring',
+  'hibernate', '.net', 'c#', 'asp.net', 'php', 'laravel', 'golang', 'go', 'python',
+  'ruby', 'delphi', 'cobol', 'sap', 'abap', 'mainframe', 'vb.net', 'visual basic',
+  'mysql dba', 'sql server dba', 'f#', 'haskell', 'scala', 'elixir',
+];
+
 // Calcula o % de compatibilidade entre a vaga e o perfil do candidato.
-// Retorna score (0-100) e as skills exigidas cobertas / não cobertas pelo perfil.
+// Retorna score (0-100), skills exigidas cobertas / não cobertas pelo perfil
+// e tecnologias bloqueadas (que o perfil evita) encontradas na vaga.
 export function calcularCompatibilidade(desc?: string): {
   score: number;
   matched: string[];
   missing: string[];
+  blocked: string[];
 } {
-  if (!desc) return { score: 0, matched: [], missing: [] };
+  if (!desc) return { score: 0, matched: [], missing: [], blocked: [] };
   const normalizeToken = (s: string) => normKey(s).replace(/[^a-z0-9]/g, '');
   const d = normalizeToken(desc);
+  // para detecção de bloqueio usamos a string com espaços/pontuação preservados
+  // (senão "java" viraria substring de "javascript" e "advpl" colaria nas palavras vizinhas)
+  const dRaw = normKey(desc);
   const matched: string[] = [];
   const missing: string[] = [];
+  const blocked: string[] = [];
   for (const term of KEYWORDS_VAGA) {
     const nt = normalizeToken(term);
     if (!d.includes(nt)) continue;
@@ -87,9 +102,27 @@ export function calcularCompatibilidade(desc?: string): {
     if (coberto) matched.push(term);
     else missing.push(term);
   }
+  for (const b of KEYWORDS_BLOQUEADAS) {
+    // Fronteira de palavra pra não dar falso positivo:
+    // ex.: "java" NÃO pode bater dentro de "javascript", "go" não bate em "google".
+    const regex = new RegExp(`(?<![a-z0-9])${b}(?![a-z0-9])`);
+    if (regex.test(dRaw)) blocked.push(b);
+  }
+  // Penaliza forte se a vaga exigir tecnologia que o perfil evita:
+  // score nunca passa de 30 quando há bloqueio, proporcional à quantidade.
   const total = matched.length + missing.length;
-  const score = total === 0 ? 0 : Math.round((matched.length / total) * 100);
-  return { score, matched: dedupe(matched), missing: dedupe(missing) };
+  let score = total === 0 ? 0 : Math.round((matched.length / total) * 100);
+  if (blocked.length) {
+    const penalidade = Math.min(90, 25 * blocked.length);
+    score = Math.max(5, Math.round(score * (1 - penalidade / 100)));
+    score = Math.min(30, score);
+  }
+  return {
+    score,
+    matched: dedupe(matched),
+    missing: dedupe(missing),
+    blocked: dedupe(blocked),
+  };
 }
 
 function dedupe(arr: string[]): string[] {
