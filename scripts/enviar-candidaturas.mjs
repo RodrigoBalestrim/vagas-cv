@@ -7,19 +7,19 @@ import PDFDocument from 'pdfkit';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const API_URL = process.env.API_URL || 'http://localhost:3000';
 const DIAS = process.env.DIAS || '30';
-const GMAIL_USER = process.env.GMAIL_USER || '<EMAIL>';
+const GMAIL_USER = process.env.GMAIL_USER;
 const GMAIL_PASS = process.env.GMAIL_PASS;
 const DRY_RUN = process.env.DRY_RUN !== '0';
 const TEST_MODE = process.env.TEST_MODE === '1';
 const MAX_EMAILS = parseInt(process.env.MAX_EMAILS || '5', 10);
 const CANDIDATO = {
-  nome: '<NOME COMPLETO>',
-  cidade: '<CIDADE, UF>',
-  email: '<EMAIL>',
-  telefone: '<TELEFONE>',
-  github: 'https://github.com/<usuario>',
-  linkedin: 'https://www.linkedin.com/in/<usuario>',
-  portfolio: 'https://<portfolio>.vercel.app',
+  nome: process.env.CANDIDATO_NOME || '',
+  cidade: process.env.CANDIDATO_CIDADE || '',
+  email: process.env.CANDIDATO_EMAIL || '',
+  telefone: process.env.CANDIDATO_TELEFONE || '',
+  github: process.env.CANDIDATO_GITHUB || '',
+  linkedin: process.env.CANDIDATO_LINKEDIN || '',
+  portfolio: process.env.CANDIDATO_PORTFOLIO || '',
 };
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;

@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import PDFDocument from 'pdfkit';
 
-const TEXTO = '<CAMINHO_LOCAL>curriculo-para-importar.txt';
-const SAIDA = '<CAMINHO_LOCAL>curriculo-para-importar.pdf';
+const TEXTO = process.env.CURRICULO_TEXTO || 'curriculo-para-importar.txt';
+const SAIDA = process.env.CURRICULO_SAIDA || 'curriculo-para-importar.pdf';
 
 const linhas = fs.readFileSync(TEXTO, 'utf-8').replace(/\r\n/g, '\n').split('\n');
 
-const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: 'Currículo - <NOME COMPLETO>' } });
+const doc = new PDFDocument({ size: 'A4', margin: 48, info: { Title: 'Currículo' } });
 const chunks = [];
 doc.on('data', c => chunks.push(c));
 doc.on('end', () => fs.writeFileSync(SAIDA, Buffer.concat(chunks)));
@@ -18,16 +18,20 @@ const FONTE_SECAO = 10.5;
 const FONTE_ITEM = 9.5;
 const FONTE_PAR = 9;
 
-doc.font('Helvetica-Bold').fontSize(FONTE_TITULO).fillColor('#111111').text('<NOME COMPLETO>');
-doc.moveDown(0.2);
-doc.font('Helvetica-Bold').fontSize(FONTE_CARGO).fillColor('#111111').text('Desenvolvedor Front-End Júnior');
-doc.moveDown(0.15);
-doc.font('Helvetica').fontSize(FONTE_CONTATO).fillColor('#333333').text(
-  '<CIDADE, UF> · <EMAIL> · <TELEFONE>'
-);
-doc.font('Helvetica').fontSize(FONTE_CONTATO).fillColor('#333333').text(
-  'GitHub: https://github.com/<usuario> · LinkedIn: https://www.linkedin.com/in/<usuario> · Portfólio: https://<portfolio>.vercel.app'
-);
+const cabecalho = fs.existsSync(TEXTO)
+  ? linhas.slice(0, 3).filter(Boolean).join('\n')
+  : '';
+
+if (cabecalho) {
+  doc.font('Helvetica-Bold').fontSize(FONTE_TITULO).fillColor('#111111').text(cabecalho.split('\n')[0]);
+  doc.moveDown(0.2);
+  const resto = cabecalho.split('\n').slice(1);
+  doc.font('Helvetica-Bold').fontSize(FONTE_CARGO).fillColor('#111111').text(resto[0] || '');
+  doc.moveDown(0.15);
+  if (resto[1]) {
+    doc.font('Helvetica').fontSize(FONTE_CONTATO).fillColor('#333333').text(resto[1]);
+  }
+}
 
 let secoes = ['OBJETIVO', 'RESUMO', 'SKILLS', 'PROJETOS', 'EXPERIÊNCIA', 'FORMAÇÃO', 'CERTIFICADOS', 'IDIOMAS'];
 let secaoAtual = '';

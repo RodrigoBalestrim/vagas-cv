@@ -157,9 +157,12 @@ function extrairItems(linhas: string[]): string[] {
 }
 
 export function parseCurriculo(texto: string): UserProfile {
-  // URLs podem ser quebradas no meio por quebras de linha do PDF — repara juntando.
-  // Só junta se a próxima linha parecer continuação de URL (começa com minúscula/dígito),
-  // pra não engolir títulos de seção como "EXPERIÊNCIA".
+  // URLs podem ser quebradas no meio por quebras de linha OU espaços do PDF
+  // (ex.: "https://github.com/ Rodrigo" vira "https://github.com/Rodrigo").
+  // 1) Espaço logo após o domínio/barra de uma URL (mesma linha) — só cola se a
+  //    parte antes do espaço termina com "/" E o próximo token tem "/" (URL real).
+  texto = texto.replace(/(https?:\/\/[^\s]+\/)\s+(?=[a-zA-Z0-9][^\s]*\/)/gi, '$1');
+  // 2) Quebra de linha no meio de uma URL (continuação parece parte de URL).
   texto = texto.replace(/https?:\/\/[^\s]*(?:\n(?=[a-z0-9./?=_:~%+-])\S+)*/g, m => m.replace(/\n/g, ''));
 
   const perfil: UserProfile = {
