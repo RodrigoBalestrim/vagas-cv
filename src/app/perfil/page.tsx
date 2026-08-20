@@ -8,6 +8,9 @@ import { carregarPerfil, salvarPerfil } from '@/lib/perfil-store';
 import { UserProfile, PROFILE_VAZIO } from '@/lib/user-profile';
 import { extrairTextoDeArquivo, parseCurriculo } from '@/lib/parse-curriculo';
 
+// Página "Meu Perfil" (rota /perfil): CRUD do perfil do usuário no Firestore.
+// Permite preencher manualmente OU importar de um currículo (PDF/Word/TXT),
+// que é parseado automaticamente e preenche os campos.
 export default function PerfilPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -19,6 +22,7 @@ export default function PerfilPage() {
   const [erroImport, setErroImport] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Extrai o texto do arquivo enviado e preenche o perfil automaticamente
   const importarArquivo = async (file: File) => {
     setImportando(true);
     setErroImport('');
@@ -26,16 +30,18 @@ export default function PerfilPage() {
       const texto = await extrairTextoDeArquivo(file);
       if (!texto.trim()) throw new Error('Arquivo vazio ou sem texto (PDF escaneado/imagem?).');
       const p = parseCurriculo(texto);
+      // Mescla com o perfil atual (mantém o que o usuário já tinha preenchido)
       setPerfil(prev => ({ ...prev, ...p }));
       setSalvo(false);
     } catch (e: any) {
       setErroImport(e?.message || 'Falha ao ler o arquivo.');
     } finally {
       setImportando(false);
-      if (fileRef.current) fileRef.current.value = '';
+      if (fileRef.current) fileRef.current.value = ''; // permite reenviar o mesmo arquivo
     }
   };
 
+  // Redireciona para login se não autenticado e carrega o perfil salvo
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -49,11 +55,13 @@ export default function PerfilPage() {
     })();
   }, [user, loading, router]);
 
+  // Helper de atualização de campo: atualiza e marca como "não salvo"
   const set = <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
     setPerfil(prev => ({ ...prev, [key]: value }));
     setSalvo(false);
   };
 
+  // Salva o perfil no Firestore (cria/atualiza perfis/{uid})
   const salvar = async () => {
     if (!user) return;
     setSalvando(true);

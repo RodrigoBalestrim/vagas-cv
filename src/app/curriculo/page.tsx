@@ -15,6 +15,9 @@ interface Compatibilidade {
   explicacao?: string;
 }
 
+// Página "Gerar Currículo" (rota /curriculo): permite colar a descrição de
+// uma vaga e gerar o currículo ATS a partir do perfil do usuário logado,
+// com pré-visualização em HTML ou PDF e download do PDF.
 export default function CurriculoPage() {
   const { user, loading: authLoading, logout, getToken } = useAuth();
   const router = useRouter();
@@ -29,6 +32,7 @@ export default function CurriculoPage() {
   const [compat, setCompat] = useState<Compatibilidade | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Carrega o perfil do usuário logado; se não estiver logado, redireciona ao login
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -41,14 +45,17 @@ export default function CurriculoPage() {
     })();
   }, [user, authLoading, router]);
 
+  // Nome exibido no rodapé/cabeçalho (ou derivado do e-mail quando não há perfil)
   const nomeExibido = perfil?.nome || (user?.email?.split('@')[0] || 'você');
   const semPerfil = !!user && !perfil;
 
+  // Payload base enviado à API /api/resume (título e descrição da vaga)
   const payload = () => ({
     jobTitle: titulo.trim() || undefined,
     jobDescription: descricao.trim() || undefined,
   });
 
+  // POST autenticado para /api/resume usando o token do usuário logado
   const postResume = async (body: Record<string, unknown>) =>
     fetch('/api/resume', {
       method: 'POST',
@@ -56,6 +63,7 @@ export default function CurriculoPage() {
       body: JSON.stringify(body),
     });
 
+  // Gera um nome de arquivo seguro a partir do título da vaga
   const nomeArquivo = (ext: string) => {
     const base = (titulo.trim() || 'curriculo')
       .replace(/[\[\]()]/g, '')
@@ -65,6 +73,7 @@ export default function CurriculoPage() {
     return `${base}.${ext}`;
   };
 
+  // Busca o PDF no servidor e guarda a blob URL para pré-visualizar/baixar
   const buscarPDF = async () => {
     const res = await postResume({ ...payload(), format: 'pdf' });
     if (!res.ok) throw new Error(String(res.status));
@@ -75,6 +84,7 @@ export default function CurriculoPage() {
     return url;
   };
 
+  // Gera o HTML do currículo e, em paralelo, o "match" (compatibilidade com a vaga)
   const gerar = async () => {
     setLoading(true);
     setErro(false);
@@ -97,6 +107,7 @@ export default function CurriculoPage() {
     }
   };
 
+  // Dispara o download do PDF (usa cache se já gerado)
   const baixarPDF = async () => {
     setLoading(true);
     try {

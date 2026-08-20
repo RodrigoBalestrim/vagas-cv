@@ -6,6 +6,11 @@ import { gerarCurriculoHTML, gerarCurriculoPDF, calcularCompatibilidade } from '
 import { UserProfile, PROFILE_VAZIO } from '@/lib/user-profile';
 import { Job } from '@/types';
 
+// API POST /api/resume — gera o currículo do usuário autenticado.
+// EXIGE um ID token do Firebase no header (Authorization: Bearer <token>).
+// Formatos: "html", "pdf" ou "match" (score de compatibilidade).
+// O perfil é SEMPRE carregado do Firestore (nunca confia no body).
+
 // Inicializa o Admin SDK uma única vez (server-side)
 function adminApp() {
   if (getApps().length) return getApps()[0];
@@ -14,6 +19,7 @@ function adminApp() {
   return initializeApp({ credential: cert(JSON.parse(key)) });
 }
 
+// Valida o token Bearer e devolve o uid do usuário (ou null se inválido)
 async function userAutenticado(request: NextRequest): Promise<string | null> {
   try {
     const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
@@ -27,6 +33,7 @@ async function userAutenticado(request: NextRequest): Promise<string | null> {
 
 export async function POST(request: NextRequest) {
   try {
+    // 1) Autenticação obrigatória
     const uid = await userAutenticado(request);
     if (!uid) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
@@ -37,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     let vaga: Job | undefined;
 
-    // Se forneceu descrição manual da vaga, cria objeto Job ad-hoc
+    // 2a) Se forneceu descrição manual da vaga, cria objeto Job ad-hoc
     if (jobDescription) {
       vaga = {
         id: `manual-${Date.now()}`,
@@ -51,18 +58,21 @@ export async function POST(request: NextRequest) {
         brasileira: true,
       };
     } else if (jobId || jobUrl) {
-      // Busca vaga existente nos resultados
+      // 2b) Busca vaga existente nos resultados
       const vagas = await fetch(`${request.url.split('/api/resume')[0]}/api/jobs?dias=30`).then(r => r.json());
       vaga = (vagas.vagas || []).find((v: Job) => v.id === jobId || v.url === jobUrl);
     }
 
-    // Carrega o perfil DO PRÓPRIO usuário autenticado (Firestore) — nunca do body.
+    // 3) Carrega o perfil DO PRÓPRIO usuário autenticado (Firestore) — nunca do body.
     const doc = await getFirestore(adminApp()).collection('perfis').doc(uid).get();
     const perfilUsr: UserProfile = sanitizePerfil(doc.exists ? doc.data() : undefined) || PROFILE_VAZIO;
 
+    // 4) Gera o HTML do currículo (com IA se configurada, senão fallback)
     const html = await gerarCurriculoHTML(vaga, perfilUsr);
 
+    // 5) Responde conforme o formato pedido
     if (format === 'match') {
+      // Score de compatibilidade com a vaga (não gera currículo)
       return NextResponse.json(calcularCompatibilidade(body.jobDescription || vaga?.descricao));
     }
 
@@ -98,8 +108,8 @@ export async function POST(request: NextRequest) {
 // Garante que só campos conhecidos do perfil sejam aceitos (evita campos arbitrários no PDF)
 function sanitizePerfil(raw: any): UserProfile | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
-  const str = (v: any) => (typeof v === 'string' ? v.slice(0, 5000) : '');
-  const strArr = (v: any) => (Array.isArray(v) ? v.filter(x => typeof x === 'string').map(x => x.slice(0, 2000)).slice(0, 100) : []);
+  const str = (v: any) => (typeof v === 'string' ? v.slice(0, 5000) : '');            // strings com limite
+  const strArr = (v: any) => (Array.isArray(v) ? v.filter(x => typeof x === 'string').map(x => x.slice(0, 2000)).slice(0, 100) : []); // listas com limite
   const objArr = (v: any) =>
     Array.isArray(v)
       ? v.filter(x => x && typeof x === 'object').map(x => ({
@@ -127,6 +137,8 @@ function sanitizePerfil(raw: any): UserProfile | undefined {
   };
 }
 
+// GET /api/resume — gera o currículo BASE (sem vaga e sem login) para quem só
+// quer ver o template. Não usa perfil real, então não vaza dados.
 export async function GET() {
   try {
     const html = await gerarCurriculoHTML();

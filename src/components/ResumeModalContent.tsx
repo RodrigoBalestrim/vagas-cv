@@ -7,17 +7,22 @@ import { carregarPerfil } from '@/lib/perfil-store';
 import { UserProfile } from '@/lib/user-profile';
 
 interface ResumeModalContentProps {
-  vaga?: Job;
-  onClose: () => void;
+  vaga?: Job;         // vaga selecionada (modo "Auto"); vazio se abrir manual
+  onClose: () => void; // fecha o modal
 }
 
+// Modal de geração de currículo aberto a partir de um card de vaga.
+// Tem dois modos:
+// - "Auto (da vaga)": gera o currículo usando a descrição da vaga salva.
+// - "Manual (colar descrição)": o usuário cola título/empresa/local/descrição.
+// Mostra pré-visualização em HTML ou PDF e permite baixar o PDF final.
 export default function ResumeModalContent({ vaga, onClose }: ResumeModalContentProps) {
   const { user, getToken } = useAuth();
-  const [html, setHtml] = useState<string>('');
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [preview, setPreview] = useState<'html' | 'pdf'>('html');
+  const [html, setHtml] = useState<string>('');          // HTML do currículo gerado
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null); // blob URL do PDF
+  const [preview, setPreview] = useState<'html' | 'pdf'>('html'); // aba ativa
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(0);           // barra de progresso fake
   const [mode, setMode] = useState<'auto' | 'manual'>('auto');
   const [perfil, setPerfil] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
@@ -29,6 +34,7 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Carrega o perfil do usuário logado para saber se ele tem dados salvos
   useEffect(() => {
     if (!user) {
       setPerfil(null);
@@ -40,18 +46,20 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     })();
   }, [user]);
 
+  // Envia a requisição para a API /api/resume com o token do usuário no header
   const withAuth = async (payload: Record<string, unknown>) => {
     const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${await getToken()}` };
     return fetch('/api/resume', { method: 'POST', headers, body: JSON.stringify(payload) });
   };
 
+  // Barra de progresso simulada (a geração pode demorar com IA)
   const startProgress = () => {
     setProgress(0);
     if (progressTimer.current) clearInterval(progressTimer.current);
     progressTimer.current = setInterval(() => {
       setProgress(p => {
-        if (p >= 90) return 90;
-        const inc = p < 40 ? 8 : p < 70 ? 4 : 2;
+        if (p >= 90) return 90;                 // trava em 90% até terminar
+        const inc = p < 40 ? 8 : p < 70 ? 4 : 2; // desacelera com o tempo
         return Math.min(90, p + inc);
       });
     }, 300);
@@ -63,6 +71,7 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     setProgress(100);
   };
 
+  // Chama a API para gerar o HTML do currículo (modo auto ou manual)
   const generateResume = async (data?: typeof formData) => {
     setLoading(true);
     startProgress();
@@ -73,7 +82,7 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
         location: vaga?.local,
         jobDescription: vaga?.descricao || vaga?.titulo,
         format: 'html',
-        ...data,
+        ...data, // se "manual", sobrescreve com o que o usuário digitou
       };
       const res = await withAuth(payload);
       const text = await res.text();
@@ -88,6 +97,7 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     }
   };
 
+  // No modo "Auto", gera automaticamente ao abrir o modal (ou trocar de vaga)
   useEffect(() => {
     if (vaga && mode === 'auto') {
       generateResume();
@@ -95,22 +105,25 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vaga?.id, vaga?.url, mode]);
 
+  // Submissão do formulário manual
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setMode('manual');
     generateResume(formData);
   };
 
+  // Cria um nome de arquivo seguro a partir do título da vaga
   const nomeArquivo = (ext: string) => {
     const tituloVaga = (mode === 'manual' ? formData.jobTitle : vaga?.titulo) || 'curriculo';
     const base = tituloVaga
       .replace(/[\[\]()]/g, '')
-      .replace(/[^a-zA-Z0-9áéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ]+/g, '-')
+      .replace(/[^a-zA-Z0-9áéíóúâêôãõçÁÉÍÓÚÂÊÔÃÕÇ]+/g, '-') // caracteres especiais → hífen
       .replace(/^-+|-+$/g, '')
       .toLowerCase();
     return `${base}.${ext}`;
   };
 
+  // Busca e guarda a blob URL do PDF gerado no servidor
   const buscarPDF = async () => {
     const payload = mode === 'manual'
       ? { ...formData, format: 'pdf' }
@@ -124,12 +137,13 @@ export default function ResumeModalContent({ vaga, onClose }: ResumeModalContent
     const res = await withAuth(payload);
     if (!res.ok) throw new Error(String(res.status));
     const blob = await res.blob();
-    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl); // libera a URL antiga da memória
     const url = URL.createObjectURL(blob);
     setPdfUrl(url);
     return url;
   };
 
+  // Dispara o download do PDF (usa o cache se já gerado antes)
   const baixarPDF = async () => {
     setLoading(true);
     try {

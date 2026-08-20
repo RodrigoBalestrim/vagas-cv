@@ -1,5 +1,12 @@
 import { Job } from '@/types';
 
+// Coletor de vagas: agrega vagas de múltiplas fontes públicas.
+// Fontes brasileiras (GitHub repos BR, Programathor, Vagas.com, Novo Trampo)
+// + internacionais (Remotive, RemoteOK, WeWorkRemotely, Himalayas, Jobicy,
+// WorkingNomads). Cada fonte tem um adaptador (fonte*) que normaliza os
+// dados para o tipo Job.
+
+// Repositórios do GitHub com issues de vagas brasileiras
 const REPOS_GITHUB = [
   'backend-br/vagas',
   'frontendbr/vagas',
@@ -16,6 +23,7 @@ const REPOS_GITHUB = [
   'devmatogrosso/vagas',
 ];
 
+// Keywords usadas para filtrar vagas relevantes ao perfil
 const CORE_KEYWORDS = [
   'react native', 'expo', 'react', 'next.js', 'nextjs', 'typescript', 'javascript',
   'frontend', 'front-end', 'front end', 'mobile', 'android', 'fullstack', 'full-stack',
@@ -32,11 +40,15 @@ const PENALTIES = [
   'care specialist', 'product strategy', 'revenue lead', 'sales', 'recruiter',
 ];
 
+// Regex de stacks que não interessam (back-ends com outras linguagens)
 const STACK_RUIM = /(\.\s?net\b|dotnet|asp\.net|c#|c\+\+|\bpython\b|django|flask|\bphp\b|laravel|\bjava\b|kotlin|golang|\bgo\b|\bruby\b|\brails\b|scala|elixir|\brust\b)/i;
+// Regex para detectar vagas remotas
 const REMOTE_REGEX = /(remoto|remote|home\s*-?office|anywhere|worldwide|global|latam|latin america)/;
 
+// Regex de cargos que NÃO são de desenvolvimento (vendas, marketing, RH, suporte...)
 const NAO_DEV = /\b(sales|account manager|account executive|business development|recruiter|recruiting|marketing|brand protection|compliance|analyst|analista|negotiator|infanteer|military|service desk|support specialist|customer success|customer service|head of|product strategy|revenue|bd assistant|gtm|accounting|finance|legal|hr |human resources|project manager|product manager|scrum master|designer|ui designer|ux designer|data scientist|data engineer|qa manual|tester|content reviewer|content writer|reviewer|data management|data analyst|operations|administrative|coordinator|coordenador|assistant|assistente|specialist|counsel|paralegal|writer|editor|copywriter|vendedor|atendente|auxiliar|recepcionista|caixa|estoquista)\b/i;
 
+// Termos que indicam aceitação de candidatos do Brasil
 const BRAZIL_POSITIVE = [
   'worldwide', 'anywhere', 'global', 'latam', 'latin america',
   'americas', 'south america', 'brazil', 'brasil',
@@ -46,12 +58,14 @@ function norm(s: string): string {
   return (s || '').toLowerCase();
 }
 
+// Verifica se o texto menciona que a vaga aceita Brasil
 function aceitaBrasil(texto: string): boolean {
   const l = norm(texto);
   if (!l) return false;
   return BRAZIL_POSITIVE.some(p => l.includes(p));
 }
 
+// Detecta nível da vaga a partir do título
 function nivel(titulo: string): 'jr' | 'pleno' | 'sr' | '?' {
   const t = ' ' + norm(titulo) + ' ';
   const jr = ['júnior', 'junior', 'estág', 'estagi', 'trainee', 'aprendiz', 'iniciante', ' jr ', ' jr.', '-jr', '/jr', 'entry', 'júnior', 'júnior', 'estagi'];
@@ -63,10 +77,12 @@ function nivel(titulo: string): 'jr' | 'pleno' | 'sr' | '?' {
   return '?';
 }
 
+// Filtra vagas que permitem trabalho remoto
 function localOK(vaga: Job): boolean {
   return REMOTE_REGEX.test(norm(`${vaga.titulo} ${vaga.local} ${vaga.descricao}`));
 }
 
+// Remove tags HTML e entidades, normaliza espaços
 function limpar(html: string): string {
   return (html || '')
     .replace(/<[^>]+>/g, ' ')
@@ -75,18 +91,21 @@ function limpar(html: string): string {
     .trim();
 }
 
+// Faz GET e devolve JSON (com cache desabilitado para sempre buscar atualizado)
 async function pegarJson(url: string, headers: Record<string, string> = {}): Promise<any> {
   const res = await fetch(url, { cache: 'no-store', headers: { 'User-Agent': 'vagas-cv', ...headers } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
+// Faz GET e devolve texto puro
 async function pegarTexto(url: string): Promise<string> {
   const res = await fetch(url, { cache: 'no-store', headers: { 'User-Agent': 'vagas-cv' } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.text();
 }
 
+// Parser simples de RSS: extrai os blocos <item> e campos básicos
 function parseRss(xml: string): any[] {
   const blocks = xml.split(/<item[ >]/i).slice(1);
   return blocks.map(b => {
@@ -105,17 +124,18 @@ function parseRss(xml: string): any[] {
 }
 
 async function fonteGitHub(repo: string, limiteData: number, keywords: string[]): Promise<Job[]> {
+  // Busca issues abertas do repositório (ex.: frontendbr/vagas) que pareçam vagas
   const url = `https://api.github.com/repos/${repo}/issues?state=open&sort=created&direction=desc&per_page=100`;
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
-  if (process.env.GH_PAT) headers.Authorization = `Bearer ${process.env.GH_PAT}`;
+  if (process.env.GH_PAT) headers.Authorization = `Bearer ${process.env.GH_PAT}`; // token opcional = mais req/h
 
   try {
     const issues = await pegarJson(url, headers);
     return issues
-      .filter((i: any) => !i.pull_request && Date.parse(i.created_at) >= limiteData)
+      .filter((i: any) => !i.pull_request && Date.parse(i.created_at) >= limiteData) // só issues novas
       .filter((i: any) => {
         const text = norm(`${i.title} ${i.body || ''}`);
-        return keywords.some(k => text.includes(k));
+        return keywords.some(k => text.includes(k)); // só as que mencionam o perfil
       })
       .map((i: any) => {
 // limpa prefixos/sufixos comuns de localização do título
@@ -145,6 +165,7 @@ async function fonteGitHub(repo: string, limiteData: number, keywords: string[])
 }
 
 async function fonteRemotive(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // Remotive (API JSON de vagas remotas de software)
   try {
     const { jobs = [] } = await pegarJson('https://remotive.com/api/remote-jobs?category=software-dev&limit=100');
     return jobs
@@ -171,6 +192,7 @@ async function fonteRemotive(limiteData: number, keywords: string[]): Promise<Jo
 }
 
 async function fonteRemoteOK(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // RemoteOK (API JSON de vagas remotas)
   try {
     const arr = await pegarJson('https://remoteok.com/api');
     return arr
@@ -197,6 +219,7 @@ async function fonteRemoteOK(limiteData: number, keywords: string[]): Promise<Jo
 }
 
 async function fonteWWR(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // WeWorkRemotely (feed RSS de programação remota)
   try {
     const xml = await pegarTexto('https://weworkremotely.com/categories/remote-programming-jobs.rss');
     const items = parseRss(xml);
@@ -224,6 +247,7 @@ async function fonteWWR(limiteData: number, keywords: string[]): Promise<Job[]> 
 }
 
 async function fonteHimalayas(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // Himalayas (API JSON de vagas remotas)
   try {
     const data = await pegarJson('https://himalayas.app/jobs/api?limit=100');
     const jobs = data.jobs || data.data || [];
@@ -258,6 +282,7 @@ async function fonteHimalayas(limiteData: number, keywords: string[]): Promise<J
 }
 
 async function fonteJobicy(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // Jobicy (API JSON de vagas remotas)
   try {
     const data = await pegarJson('https://jobicy.com/api/v2/remote-jobs?count=50');
     const jobs = data.jobs || [];
@@ -299,6 +324,7 @@ interface WorkingNomadsJob {
 }
 
 async function fonteWorkingNomads(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // WorkingNomads (API JSON de vagas remotas)
   try {
     const arr = await pegarJson('https://www.workingnomads.com/api/exposed_jobs/');
     return (arr as WorkingNomadsJob[])
@@ -326,6 +352,7 @@ async function fonteWorkingNomads(limiteData: number, keywords: string[]): Promi
 }
 
 async function fonteProgramathor(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // Programathor (site BR, sem API — faz web scraping das 3 primeiras páginas)
   const jobs: Job[] = [];
   for (let page = 1; page <= 3; page++) {
     try {
@@ -372,6 +399,7 @@ async function fonteProgramathor(limiteData: number, keywords: string[]): Promis
 }
 
 async function fonteVagasComBr(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // Vagas.com.br (site BR, sem API — faz web scraping da listagem)
   try {
     const html = await pegarTexto('https://www.vagas.com.br/vagas-de-desenvolvedor?ordenar_por=mais_recentes');
     const blocos = html.split(/<li class="vaga/).slice(1);
@@ -413,6 +441,7 @@ async function fonteVagasComBr(limiteData: number, keywords: string[]): Promise<
 }
 
 async function fonteNovoTrampo(limiteData: number, keywords: string[]): Promise<Job[]> {
+  // Novo Trampo (site BR, sem API — faz web scraping das 5 primeiras páginas)
   const jobs: Job[] = [];
   for (let page = 1; page <= 5; page++) {
     try {
@@ -457,8 +486,12 @@ async function fonteNovoTrampo(limiteData: number, keywords: string[]): Promise<
   return jobs;
 }
 
+// Ponto de entrada: coleta vagas de TODAS as fontes em paralelo,
+// aplica filtros (aceita Brasil, é dev, remota, stack compatível, nível) e deduplica.
 export async function coletarVagas(dias: number = 30, keywords: string[] = []): Promise<Job[]> {
+  // Data-limite: só vagas publicadas nos últimos N dias
   const limiteData = Date.now() - dias * 24 * 60 * 60 * 1000;
+  // Keywords padrão quando o chamador não informa (foco do perfil)
   const kw = keywords.length > 0 ? keywords : [
     'react native', 'expo', 'react', 'next.js', 'nextjs', 'typescript',
     'javascript', 'frontend', 'front-end', 'front end', 'mobile', 'android',
@@ -467,6 +500,7 @@ export async function coletarVagas(dias: number = 30, keywords: string[] = []): 
     'full-stack', 'full stack', 'node.js', 'nodejs'
   ];
 
+  // Executa todas as fontes em paralelo (Promise.allSettled: uma falha não derruba as outras)
   const resultados = await Promise.allSettled([
     ...REPOS_GITHUB.map(r => fonteGitHub(r, limiteData, kw)),
     fonteRemotive(limiteData, kw),
@@ -480,6 +514,7 @@ fonteProgramathor(limiteData, kw),
     fonteNovoTrampo(limiteData, kw),
   ]);
 
+  // Junta os resultados bem-sucedidos (logando o que falhou)
   const vagas: Job[] = [];
   resultados.forEach((r, i) => {
     if (r.status === 'fulfilled') {
@@ -490,14 +525,14 @@ fonteProgramathor(limiteData, kw),
     }
   });
 
-// Filtros
+  // Filtros
   const filtradas = vagas
-    .filter(v => v.brasileira || aceitaBrasil(`${v.local} ${v.descricao}`))
-    .filter(v => !NAO_DEV.test(`${v.titulo} ${v.descricao}`))
-    .filter(localOK)
-    .filter(v => !STACK_RUIM.test(`${v.titulo} ${v.descricao}`))
-    .filter(v => nivel(v.titulo) !== 'sr')
-    .filter(v => nivel(v.titulo) !== 'pleno');
+    .filter(v => v.brasileira || aceitaBrasil(`${v.local} ${v.descricao}`)) // aceita Brasil
+    .filter(v => !NAO_DEV.test(`${v.titulo} ${v.descricao}`))               // é vaga de dev
+    .filter(localOK)                                                          // remota
+    .filter(v => !STACK_RUIM.test(`${v.titulo} ${v.descricao}`))            // stack compatível
+    .filter(v => nivel(v.titulo) !== 'sr')                                   // não é sênior
+    .filter(v => nivel(v.titulo) !== 'pleno');                               // não é pleno
 
   // Deduplicar por URL
   const vistos = new Set<string>();
@@ -507,5 +542,6 @@ fonteProgramathor(limiteData, kw),
     return true;
   });
 
-return unicas.slice(0, 120);
+  // Limita o total retornado para não estourar a resposta
+  return unicas.slice(0, 120);
 }

@@ -3,11 +3,16 @@ import { coletarVagas } from '@/lib/job-sources';
 import { ranquear } from '@/lib/scoring';
 import profileData from '@/lib/profile.json';
 
+// API GET /api/jobs?dias=&minScore=&brasil=&junior=
+// Busca vagas nas fontes externas, ranqueia pelo perfil e retorna
+// os resultados agrupados por área (React Native, Full Stack, Next.js...).
+
 // Garante que cada requisição (ex.: clique em "Atualizar") busque as fontes de novo
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
+  // Lê os filtros da query string (com valores padrão)
   const { searchParams } = new URL(request.url);
   const dias = parseInt(searchParams.get('dias') || '30', 10);
   const minScore = parseInt(searchParams.get('minScore') || '0', 10);
@@ -15,23 +20,28 @@ export async function GET(request: NextRequest) {
   const soJunior = searchParams.get('junior') === 'true';
 
   try {
+    // Keywords prioritárias do perfil (vindas de profile.json) para filtrar
     const keywords = profileData.palavras_chave_prioritarias;
     const vagas = await coletarVagas(dias, keywords);
 
+    // Ranqueia: pontua cada vaga (score 0-100) e ordena
     let resultados = ranquear(vagas);
 
     // Filtro anti-ruído: exclui vagas que não são dev (marketing, vendas, RH, etc.)
     const NAO_DEV = /\b(sales|account manager|account executive|business development|recruiter|recruiting|marketing|brand protection|compliance|analyst|negotiator|infanteer|military|service desk|support specialist|customer success|customer service|head of|product strategy|revenue|bd assistant|gtm|accounting|finance|legal|hr |human resources|project manager|product manager|scrum master|designer|ui designer|ux designer|data scientist|data engineer|qa manual|tester|content reviewer|content writer|reviewer|data management|data analyst|accounting|operations|administrative|coordinator|assistant|specialist|counsel|paralegal|writer|editor|copywriter)\b/i;
     resultados = resultados.filter(v => !NAO_DEV.test(`${v.titulo} ${v.descricao.slice(0, 300)}`));
 
+    // Filtro de score mínimo (ex.: só vagas com 60+)
     if (minScore > 0) {
       resultados = resultados.filter(v => (v.score ?? 0) >= minScore);
     }
 
+    // Filtro "apenas Brasil"
     if (apenasBrasil) {
       resultados = resultados.filter(v => v.brasileira);
     }
 
+    // Filtro "só júnior"
     if (soJunior) {
       // só vagas júnior: aceita se título/descrição NÃO tem senior/pleno
       const SENIOR = /(senior|s[eê]nior|pleno|plena|sr\.?|specialist|tech.?lead|staff|arquiteto|arquiteta|lead|especialista|expert|principal|mid[ -]?level|plenos)/i;
@@ -47,7 +57,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Agrupar por área
+    // Agrupar por área (React Native, Full Stack, Next.js, etc.)
     const porGrupo = new Map<string, typeof resultados>();
     for (const vaga of resultados) {
       const chave = grupo(vaga.titulo);
@@ -76,6 +86,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Classifica a vaga numa área pelo título (espelhado em lib/scoring.ts)
 function grupo(titulo: string): string {
   const t = titulo.toLowerCase();
   if (/react native|\bexpo\b|mobile|android|ios/.test(t)) return 'React Native / Mobile';

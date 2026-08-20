@@ -1,5 +1,11 @@
 import { Job, RankedJob } from '@/types';
 
+// Motor de pontuação e ranqueamento de vagas.
+// Dá a cada vaga um score 0-100 com base em keywords do perfil do candidato:
+// - CORE: tecnologias principais (React, React Native, TypeScript...)
+// - SECUNDARIAS: tecnologias de apoio (Tailwind, Git, Node...)
+// - PENALIDADES: tecnologias/níveis que não combinam com o perfil
+
 const CORE = [
   'react native', 'expo', 'react', 'next.js', 'nextjs', 'typescript', 'javascript',
   'frontend', 'front-end', 'front end', 'mobile', 'android', 'fullstack', 'full-stack',
@@ -17,8 +23,10 @@ const PENALIDADES = [
   'pleno', 'mid-level', 'mid level',  // Penalizar termos de nível médio/alto no título
 ];
 
+// Normaliza texto para comparação (minúsculas, sem acentos)
 const norm = (s: string) => (s || '').toLowerCase();
 
+// Detecta o nível da vaga a partir do título (JR / PLENO / SR)
 function nivel(titulo: string): 'jr' | 'pleno' | 'sr' | '?' {
   const t = ' ' + norm(titulo) + ' ';
   const jr = ['júnior', 'junior', 'estág', 'estagi', 'trainee', 'aprendiz', 'iniciante', ' jr ', ' jr.', '-jr', '/jr', 'entry', 'júnior', 'estagi'];
@@ -30,6 +38,11 @@ function nivel(titulo: string): 'jr' | 'pleno' | 'sr' | '?' {
   return '?';
 }
 
+// Calcula o score de UMA vaga. Pontuação:
+// - keyword CORE no título: +16 | CORE na descrição: +6
+// - keyword SECUNDÁRIA no título: +5 | na descrição: +2
+// - penalidade no título: -10
+// - bônus de nível (jr +40, pleno -5, sr -30) e vaga brasileira +10
 export function pontuar(vaga: Job) {
   const titulo = norm(vaga.titulo);
   const desc = norm(vaga.descricao);
@@ -73,8 +86,10 @@ export function pontuar(vaga: Job) {
 
   if (vaga.brasileira) score += 10;
 
+  // Garante que o score fique entre 0 e 100
   score = Math.max(0, Math.min(100, score));
 
+  // Texto de explicação do match (exibido no card da vaga)
   const matched = [...combina].slice(0, 6);
   let motivo = matched.length > 0 ? `Combina com: ${matched.join(', ')}` : 'Match fraco';
   if (alertas.length) motivo += ` · ⚠ título menciona: ${alertas.slice(0, 3).join(', ')}`;
@@ -91,6 +106,8 @@ export function pontuar(vaga: Job) {
   };
 }
 
+// Ranqueia uma lista de vagas: pontua cada uma, descarta as sem match
+// (score 0) e as sênior, e ordena por score (e depois por brasileira).
 export function ranquear(vagas: Job[]): RankedJob[] {
   const comScore = vagas
     .map(v => ({ ...v, ...pontuar(v) }))
@@ -98,6 +115,7 @@ export function ranquear(vagas: Job[]): RankedJob[] {
   return comScore.sort((a, b) => ((b.score ?? 0) - (a.score ?? 0)) || (Number(b.brasileira) - Number(a.brasileira)));
 }
 
+// Agrupa vagas por área (usado nos filtros/agrupamento da API)
 export function grupo(titulo: string): string {
   const t = norm(titulo);
   if (/react native|\bexpo\b|mobile|android|ios/.test(t)) return 'React Native / Mobile';

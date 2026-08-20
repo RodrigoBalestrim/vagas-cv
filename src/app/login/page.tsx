@@ -7,19 +7,23 @@ import { auth } from '@/lib/firebase';
 import { useAuth } from '@/components/AuthProvider';
 import SiteHeader from '@/components/SiteHeader';
 
+// Página de Login/Cadastro (rota /login): autentica o usuário no Firebase
+// por e-mail/senha ou conta Google. Redireciona para /curriculo após entrar.
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
-  const [modo, setModo] = useState<'login' | 'cadastro'>('login');
+  const [modo, setModo] = useState<'login' | 'cadastro'>('login'); // alterna entre entrar/cadastrar
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
 
+  // Se o usuário já está logado, vai direto para /curriculo
   useEffect(() => {
     if (!loading && user) router.push('/curriculo');
   }, [user, loading, router]);
 
+  // Envio do formulário: login OU cadastro, conforme o modo atual
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
@@ -32,6 +36,7 @@ export default function LoginPage() {
       }
       router.push('/curriculo');
     } catch (err: any) {
+      // Traduz os códigos de erro do Firebase em mensagens amigáveis
       const code = err?.code || '';
       if (code === 'auth/email-already-in-use') setErro('Este e-mail já está cadastrado. Faça login.');
       else if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password')
@@ -44,6 +49,7 @@ export default function LoginPage() {
     }
   };
 
+  // Login com Google via popup do Firebase
   const loginGoogle = async () => {
     setErro('');
     setAuthLoading(true);

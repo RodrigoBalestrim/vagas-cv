@@ -3,14 +3,19 @@
 import { Job } from '@/types';
 
 interface JobCardProps {
-  vaga: Job;
-  onGenerateResume: (vaga: Job) => void;
+  vaga: Job;                          // dados da vaga a exibir
+  onGenerateResume: (vaga: Job) => void; // chamado ao clicar em "Gerar Currículo"
 }
 
+// Card individual de uma vaga no grid de resultados.
+// Mostra título (com badges BR/nível), empresa/local/fonte, o score de match
+// e botões de ação (ver vaga / gerar currículo).
 export default function JobCard({ vaga, onGenerateResume }: JobCardProps) {
+  // Cor do badge de score conforme o valor: >=60 verde, >=35 amarelo, senão cinza
   const scoreColor = vaga.score && vaga.score >= 60 ? 'var(--success)'
     : vaga.score && vaga.score >= 35 ? 'var(--warning)' : 'var(--text-muted)';
 
+  // Rótulo e cor do badge de nível (JR/PLENO/SR)
   const nivelLabel = vaga.nivel === 'jr' ? 'JR' : vaga.nivel === 'pleno' ? 'PLENO' : vaga.nivel === 'sr' ? 'SR' : '';
   const nivelColor = vaga.nivel === 'jr' ? 'var(--success)' : vaga.nivel === 'pleno' ? 'var(--accent)' : vaga.nivel === 'sr' ? 'var(--danger)' : 'var(--text-muted)';
 
@@ -30,10 +35,12 @@ export default function JobCard({ vaga, onGenerateResume }: JobCardProps) {
         )}
       </div>
       <div style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '6px 0 4px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        {/* Empresa, local e fonte como chips */}
         {[vaga.empresa, vaga.local, vaga.fonte].filter(Boolean).map((x, i) => (
           <span key={i} className="chip">📍 {x}</span>
         ))}
       </div>
+      {/* Explicação textual do score (ex.: "Combina com: react, typescript") */}
       {vaga.motivo && (
         <div style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px', lineHeight: 1.5 }}>
           {vaga.motivo}

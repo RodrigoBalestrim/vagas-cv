@@ -1,3 +1,10 @@
+// Script local: candidatura em massa por e-mail.
+// Busca vagas na API do site, extrai e-mails das descrições e envia
+// uma candidatura (com currículo PDF anexado) via Gmail SMTP.
+//
+// Configuração (variáveis de ambiente):
+//   API_URL, DIAS, GMAIL_USER, GMAIL_PASS (App Password), CANDIDATO_*, MAX_EMAILS,
+//   DRY_RUN (default "1" = NÃO envia, só mostra), TEST_MODE ("1" = envia p/ si mesmo)
 import nodemailer from 'nodemailer';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,6 +19,7 @@ const GMAIL_PASS = process.env.GMAIL_PASS;
 const DRY_RUN = process.env.DRY_RUN !== '0';
 const TEST_MODE = process.env.TEST_MODE === '1';
 const MAX_EMAILS = parseInt(process.env.MAX_EMAILS || '5', 10);
+// Dados do candidato vêm TODOS de variáveis de ambiente (nada hardcoded)
 const CANDIDATO = {
   nome: process.env.CANDIDATO_NOME || '',
   cidade: process.env.CANDIDATO_CIDADE || '',
@@ -24,6 +32,7 @@ const CANDIDATO = {
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 
+// Remove HTML/markdown do texto para exibição em logs
 function limpar(s = '') {
   return s
     .replace(/<[^>]+>/g, ' ')
@@ -33,6 +42,7 @@ function limpar(s = '') {
     .trim();
 }
 
+// Extrai e-mails de contato da descrição (ignorando domínios genéricos de URL)
 function extrairEmails(descricao = '') {
   const encontrados = new Set();
   const ignorar = ['github.com', 'vercel.app', 'linkedin.com', 'gmail.com', 'hotmail.com', 'outlook.com'];
@@ -45,6 +55,7 @@ function extrairEmails(descricao = '') {
   return [...encontrados];
 }
 
+// Tenta descobrir o nome da empresa a partir da descrição da vaga
 function extrairEmpresa(vaga) {
   const desc = vaga.descricao || '';
   const m = desc.match(/Sobre a empresa[^\n]*?\*\*([^*]{2,60})\*\*/i)
@@ -57,6 +68,7 @@ function extrairEmpresa(vaga) {
   return vaga.empresa || 'Recrutador(a)';
 }
 
+// Monta o assunto e o corpo do e-mail de candidatura para uma vaga
 function montarEmail(vaga) {
   const empresa = extrairEmpresa(vaga);
   const titulo = vaga.titulo || 'Vaga de Desenvolvimento';
@@ -87,6 +99,7 @@ ${CANDIDATO.cidade} · ${CANDIDATO.email} · ${CANDIDATO.telefone}`;
   return { empresa, assunto, corpo };
 }
 
+// Gera o currículo em HTML (usado como fallback e base para o PDF)
 function gerarCurriculoHTML(vaga) {
   const titulo = (vaga.titulo || 'Desenvolvedor Front-End Júnior').toUpperCase();
   return `<!DOCTYPE html>
@@ -138,6 +151,7 @@ function gerarCurriculoHTML(vaga) {
 </html>`;
 }
 
+// Skills do perfil para casar com as keywords da vaga (mesma lógica do resume-generator)
 const SKILLS_PERFIL = [
   'React', 'React Native', 'Next.js', 'TypeScript', 'JavaScript', 'Expo',
   'Expo Router', 'HTML5', 'CSS3', 'Tailwind CSS', 'Bootstrap', 'Framer Motion',
@@ -152,8 +166,10 @@ const KEYWORDS_GERAIS = [
   'estado', 'props', 'consumo de APIs', 'testes',
 ];
 
+// Normaliza para minúsculas e sem acentos
 const normKey = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+// Extrai da descrição da vaga as skills do perfil que ela menciona
 function extractJobKeywords(desc) {
   if (!desc) return [];
   const d = normKey(desc);
@@ -172,6 +188,7 @@ function extractJobKeywords(desc) {
   return uniq;
 }
 
+// Gera o currículo em PDF (A4, pdfkit) anexado ao e-mail de candidatura
 function gerarCurriculoPDF(vaga) {
   const titulo = (vaga.titulo || 'Desenvolvedor Front-End Júnior').toUpperCase();
   const keywords = extractJobKeywords(vaga.descricao || '');
@@ -280,12 +297,14 @@ function gerarCurriculoPDF(vaga) {
   });
 }
 
+// Função principal do script
 async function main() {
   if (!GMAIL_PASS) {
     console.error('Faltou GMAIL_PASS (App Password do Gmail). Crie em https://myaccount.google.com/apppasswords');
     process.exit(1);
   }
 
+  // Transporte de e-mail (Gmail SMTP). Em DRY_RUN não cria o transporte.
   const transporter = DRY_RUN
     ? null
     : nodemailer.createTransport({
@@ -338,6 +357,7 @@ async function main() {
     return;
   }
 
+  // Seleciona as vagas que possuem e-mail de contato na descrição
   const alvos = vagas
     .map(v => ({ vaga: v, emails: extrairEmails(v.descricao) }))
     .filter(x => x.emails.length > 0);
@@ -352,6 +372,7 @@ async function main() {
     return;
   }
 
+  // Limita a quantidade de envios por execução
   const enviar = alvos.slice(0, MAX_EMAILS);
 
   for (const { vaga, emails } of enviar) {

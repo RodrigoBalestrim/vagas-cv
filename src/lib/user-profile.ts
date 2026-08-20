@@ -1,15 +1,17 @@
+// Definição do perfil do usuário — o "curriculum" completo que alimenta o
+// gerador de currículo. Campos usados tanto no Firestore quanto na UI.
 export interface UserProfile {
   nome: string;
-  cargo: string;
+  cargo: string;         // cargo alvo (ex.: "Desenvolvedor Front-End Júnior")
   cidade: string;
   email: string;
   telefone: string;
-  github: string;
-  linkedin: string;
-  portfolio: string;
-  objetivo: string;
-  resumo: string;
-  skills: string[];
+  github: string;        // URL do GitHub
+  linkedin: string;      // URL do LinkedIn
+  portfolio: string;     // URL do portfólio
+  objetivo: string;      // frase curta de objetivo
+  resumo: string;        // resumo profissional
+  skills: string[];      // lista de skills (uma por linha na UI)
   projetos: { nome: string; periodo: string; descricao: string }[];
   experiencia: { cargo: string; empresa: string; periodo: string; descricao: string }[];
   formacao: { curso: string; instituicao: string; periodo: string }[];
@@ -17,6 +19,7 @@ export interface UserProfile {
   idiomas: string[];
 }
 
+// Perfil vazio: estado inicial e fallback seguro (nunca com dados fictícios).
 export const PROFILE_VAZIO: UserProfile = {
   nome: '',
   cargo: '',

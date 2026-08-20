@@ -8,6 +8,8 @@ import ResumeModalContent from '@/components/ResumeModalContent';
 import SiteHeader from '@/components/SiteHeader';
 import { useAuth } from '@/components/AuthProvider';
 
+// Página "Buscar Vagas" (rota /vagas): consome /api/jobs, exibe filtros
+// (dias, score mínimo, Brasil, só júnior) e os cards ranqueados de vagas.
 export default function VagasPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -15,13 +17,15 @@ export default function VagasPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtros, setFiltros] = useState({ dias: 30, minScore: 0, apenasBrasil: false, soJunior: false });
-  const [resumeTarget, setResumeTarget] = useState<Job | null>(null);
+  const [resumeTarget, setResumeTarget] = useState<Job | null>(null); // vaga aberta no modal
 
+  // Busca as vagas sempre que algum filtro mudar
   useEffect(() => {
     buscarVagas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtros.dias, filtros.minScore, filtros.apenasBrasil, filtros.soJunior]);
 
+  // Chama a API de vagas passando os filtros como query string
   const buscarVagas = async () => {
     setLoading(true);
     setError(null);
@@ -43,6 +47,7 @@ export default function VagasPage() {
     }
   };
 
+  // Tela de carregamento inicial (sem vagas ainda)
   if (loading && vagas.length === 0) {
     return (
       <div className="page center">
@@ -53,6 +58,7 @@ export default function VagasPage() {
     );
   }
 
+  // Tela de erro com botão de tentar novamente
   if (error) {
     return (
       <div className="page center">
@@ -72,6 +78,7 @@ export default function VagasPage() {
           <p className="muted" style={{ margin: 0 }}>{vagas.length} vagas únicas</p>
         </header>
 
+        {/* Painel de filtros */}
         <div className="card" style={{ padding: '18px 20px', marginBottom: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '14px', alignItems: 'end' }}>
             <div className="field">
@@ -116,6 +123,7 @@ export default function VagasPage() {
           <div>
             {vagas.map(vaga => (
               <JobCard key={vaga.id} vaga={vaga} onGenerateResume={(v) => {
+                // "Gerar Currículo" exige login
                 if (authLoading) return;
                 if (!user) {
                   router.push('/login');
@@ -128,6 +136,7 @@ export default function VagasPage() {
         )}
       </div>
 
+      {/* Modal de geração de currículo para a vaga selecionada */}
       {resumeTarget && (
         <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '20px', backdropFilter: 'blur(4px)' }}>
           <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius)', maxWidth: '900px', width: '100%', maxHeight: '90vh', overflow: 'auto', boxShadow: 'var(--shadow-lg)' }}>

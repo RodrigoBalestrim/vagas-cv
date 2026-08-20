@@ -3,12 +3,14 @@
 import Link from 'next/link';
 
 interface FeatureCardProps {
-  icon: string;
-  title: string;
-  description: string;
-  href: string;
+  icon: string;        // emoji/ícone exibido no topo do card
+  title: string;       // título do card
+  description: string; // texto de descrição
+  href: string;        // rota para onde o card leva ao clicar
 }
 
+// Card clicável usado na página inicial para apresentar as principais
+// funcionalidades (Buscar Vagas / Gerar Currículo). Todo o card é um link.
 export default function FeatureCard({ icon, title, description, href }: FeatureCardProps) {
   return (
     <Link href={href} style={{ textDecoration: 'none', color: 'inherit' }}>

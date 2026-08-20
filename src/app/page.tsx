@@ -1,11 +1,13 @@
 import FeatureCard from '@/components/FeatureCard';
 import SiteHeader from '@/components/SiteHeader';
 
+// Página inicial (rota "/"): apresenta o produto e os atalhos principais.
 export default function HomePage() {
   return (
     <div>
       <SiteHeader />
 
+      {/* Hero: chamada principal com os botões de ação */}
       <section className="hero">
         <span className="eyebrow">🚀 Buscador + Currículo ATS em um só lugar</span>
         <h1>Encontre a vaga certa e gere seu currículo na hora</h1>
@@ -21,6 +23,7 @@ export default function HomePage() {
       </section>
 
       <main className="container">
+        {/* Cards de acesso rápido às duas funcionalidades principais */}
         <div className="card-grid section">
           <FeatureCard
             icon="🔍"
@@ -36,6 +39,7 @@ export default function HomePage() {
           />
         </div>
 
+        {/* Passo a passo de como usar */}
         <section className="card section">
           <div className="page" style={{ padding: '32px' }}>
             <h3>Como funciona</h3>
@@ -48,6 +52,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Aviso sobre a variável de ambiente opcional do GitHub */}
         <section className="alert alert-warn section">
           <span>⚠️</span>
           <span>

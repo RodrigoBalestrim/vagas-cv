@@ -1,5 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
+/* ============================================================
+   ESTILOS GLOBAIS DO SITE (tema + componentes reutilizáveis)
+   - :root define as VARIÁVEIS do tema (cores, sombras, fontes)
+   - As classes .btn/.card/.input/.chip etc. são componentes
+     CSS reutilizados em todas as páginas.
+   ============================================================ */
+
 :root {
   --bg: #f6f7fb;
   --bg-soft: #ffffff;
