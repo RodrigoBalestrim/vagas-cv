@@ -20,7 +20,7 @@ export default function JobCard({ vaga, onGenerateResume }: JobCardProps) {
         <a href={vaga.url} target="_blank" rel="noopener noreferrer"
           style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', textDecoration: 'none', flex: 1, minWidth: '200px', lineHeight: 1.4 }}>
           {vaga.titulo}
-          {vaga.brasileira && <span className="badge" style={{ background: 'var(--primary)', color: '#fff' }}>BR</span>}
+          {vaga.brasileira && <span className="badge" style={{ background: '#0891b2', color: '#fff' }}>BR</span>}
           {nivelLabel && <span className="badge" style={{ background: nivelColor, color: '#fff' }}>{nivelLabel}</span>}
         </a>
         {vaga.score !== undefined && (
